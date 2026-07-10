@@ -6,9 +6,13 @@ const jwt = require('jsonwebtoken');
 
 let token;
 
+const { MongoMemoryServer } = require('mongodb-memory-server');
+let mongoServer;
+
 // Connect to a test database before all tests
 beforeAll(async () => {
-  const url = `mongodb://127.0.0.1/smartfarming_test_db`;
+  mongoServer = await MongoMemoryServer.create();
+  const url = mongoServer.getUri();
   await mongoose.connect(url);
 
   // Clear users
@@ -28,8 +32,13 @@ beforeAll(async () => {
 
 // Close database connection after all tests
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+  }
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
 });
 
 describe('Weather API Endpoints', () => {

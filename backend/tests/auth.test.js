@@ -3,9 +3,13 @@ const mongoose = require('mongoose');
 const app = require('../app');
 const User = require('../src/models/User');
 
+const { MongoMemoryServer } = require('mongodb-memory-server');
+let mongoServer;
+
 // Connect to a test database before all tests
 beforeAll(async () => {
-  const url = `mongodb://127.0.0.1/smartfarming_test_db`;
+  mongoServer = await MongoMemoryServer.create();
+  const url = mongoServer.getUri();
   await mongoose.connect(url);
 });
 
@@ -16,8 +20,13 @@ beforeEach(async () => {
 
 // Close database connection after all tests
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+  }
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
 });
 
 describe('Auth API Endpoints', () => {
@@ -27,8 +36,8 @@ describe('Auth API Endpoints', () => {
         .post('/api/auth/register')
         .send({
           name: 'Test User',
-          email: 'test@example.com',
-          password: 'password123'
+          identifier: 'test@example.com',
+          otp: '1234'
         });
       
       expect(res.statusCode).toEqual(201);
@@ -42,7 +51,7 @@ describe('Auth API Endpoints', () => {
       await User.create({
         name: 'Existing User',
         email: 'test@example.com',
-        password: 'password123'
+        password: '1234'
       });
 
       // Try creating user with same email
@@ -50,8 +59,8 @@ describe('Auth API Endpoints', () => {
         .post('/api/auth/register')
         .send({
           name: 'Test User 2',
-          email: 'test@example.com',
-          password: 'password456'
+          identifier: 'test@example.com',
+          otp: '1234'
         });
       
       expect(res.statusCode).toEqual(400);
@@ -66,7 +75,7 @@ describe('Auth API Endpoints', () => {
       const user = new User({
         name: 'Login Test User',
         email: 'login@example.com',
-        password: 'password123'
+        password: '1234'
       });
       await user.save(); // save will hash the password
     });
@@ -75,8 +84,8 @@ describe('Auth API Endpoints', () => {
       const res = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'login@example.com',
-          password: 'password123'
+          identifier: 'login@example.com',
+          otp: '1234'
         });
       
       expect(res.statusCode).toEqual(200);
@@ -88,8 +97,8 @@ describe('Auth API Endpoints', () => {
       const res = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'login@example.com',
-          password: 'wrongpassword'
+          identifier: 'login@example.com',
+          otp: 'wrongotp'
         });
       
       expect(res.statusCode).toEqual(401);

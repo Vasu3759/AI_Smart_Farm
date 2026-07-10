@@ -13,24 +13,31 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, identifier, otp } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !identifier || !otp) {
       return res.status(400).json({ status: 'error', message: 'Please add all fields' });
     }
 
+    if (otp !== '1234') {
+      return res.status(400).json({ status: 'error', message: 'Invalid OTP' });
+    }
+
+    const isEmail = identifier.includes('@');
+    const query = isEmail ? { email: identifier } : { phone: identifier };
+
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne(query);
 
     if (userExists) {
       return res.status(400).json({ status: 'error', message: 'User already exists' });
     }
 
-    // Create user
+    // Create user (store OTP as password for now)
     const user = await User.create({
       name,
-      email,
-      password,
+      ...(isEmail ? { email: identifier } : { phone: identifier }),
+      password: otp,
     });
 
     if (user) {
@@ -40,6 +47,7 @@ const registerUser = async (req, res) => {
           _id: user.id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           token: generateToken(user._id),
         }
       });
@@ -56,17 +64,24 @@ const registerUser = async (req, res) => {
 // @access  Public
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, otp } = req.body;
 
-    // Check for user email
-    const user = await User.findOne({ email }).select('+password');
+    if (otp !== '1234') {
+      return res.status(401).json({ status: 'error', message: 'Invalid OTP' });
+    }
+
+    const isEmail = identifier.includes('@');
+    const query = isEmail ? { email: identifier } : { phone: identifier };
+
+    // Check for user
+    const user = await User.findOne(query).select('+password');
 
     if (!user) {
       return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
     }
 
     // Check password
-    const isMatch = await user.matchPassword(password);
+    const isMatch = await user.matchPassword(otp);
 
     if (isMatch) {
       res.json({
@@ -75,6 +90,7 @@ const loginUser = async (req, res) => {
           _id: user.id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           token: generateToken(user._id),
         }
       });

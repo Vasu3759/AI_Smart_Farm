@@ -7,14 +7,14 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { API_URL } from '../config';
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [otp, setOtp] = useState('');
 
   const handleLogin = async () => {
     try {
       const response = await axios.post(`${API_URL}/api/auth/login`, { 
-        email: email.trim().toLowerCase(), 
-        password: password.trim() 
+        identifier: identifier.trim().toLowerCase(), 
+        otp: otp.trim() 
       });
       await AsyncStorage.setItem('token', response.data.data.token);
       navigation.replace('MainTabs'); // Change to MainTabs when App.js is updated
@@ -40,46 +40,36 @@ export default function LoginScreen({ navigation }) {
 
         <BlurView intensity={80} tint="light" style={styles.glassCard}>
           
-          <Text style={styles.inputLabel}>Email Address</Text>
+          <Text style={styles.inputLabel}>Email or Mobile Number</Text>
           <View style={styles.inputContainer}>
-            <Feather name="mail" size={20} color="#6B7280" style={styles.inputIcon} />
+            <Feather name="user" size={20} color="#6B7280" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="farmer@agriyield.ai"
+              placeholder="Email or Mobile No."
               placeholderTextColor="#9CA3AF"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
+              value={identifier}
+              onChangeText={setIdentifier}
               autoCapitalize="none"
-            />
-          </View>
-          
-          <Text style={styles.inputLabel}>Mobile Number</Text>
-          <View style={styles.inputContainer}>
-            <Feather name="phone" size={20} color="#6B7280" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="+1 (555) 000-0000"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="phone-pad"
             />
           </View>
 
           <View style={styles.passwordHeader}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <Text style={styles.forgotText}>Forgot Password?</Text>
+            <Text style={styles.inputLabel}>OTP</Text>
           </View>
           <View style={styles.inputContainer}>
             <Feather name="lock" size={20} color="#6B7280" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="••••••••"
+              placeholder="1234 (For Mentoring)"
               placeholderTextColor="#9CA3AF"
-              value={password}
-              onChangeText={setPassword}
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
               secureTextEntry
             />
-            <Feather name="eye" size={20} color="#6B7280" style={styles.inputIconRight} />
+            <TouchableOpacity style={styles.getOtpButton} onPress={() => setOtp('1234')}>
+              <Text style={styles.getOtpText}>Get OTP</Text>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
@@ -87,22 +77,7 @@ export default function LoginScreen({ navigation }) {
             <Feather name="arrow-right" size={20} color="#FFF" style={{marginLeft: 10}} />
           </TouchableOpacity>
 
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-            <View style={styles.divider} />
-          </View>
 
-          <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.socialButton}>
-              <MaterialCommunityIcons name="google" size={20} color="#374151" />
-              <Text style={styles.socialText}>Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <MaterialCommunityIcons name="message-processing-outline" size={20} color="#374151" />
-              <Text style={styles.socialText}>OTP</Text>
-            </TouchableOpacity>
-          </View>
 
           <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.createAccountContainer}>
             <Text style={styles.newToField}>New to the field? </Text>
@@ -272,6 +247,18 @@ const styles = StyleSheet.create({
     color: '#064E3B',
     fontWeight: '700',
     fontSize: 15,
+  },
+  getOtpButton: {
+    marginLeft: 'auto',
+    backgroundColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  getOtpText: {
+    color: '#115E59',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   footer: {
     position: 'absolute',

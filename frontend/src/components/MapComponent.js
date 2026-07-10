@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Button, Alert, Modal, TextInput } from 'react-native';
-import MapView, { Marker, Polygon, UrlTile } from 'react-native-maps';
+import MapView, { Marker, Polygon } from 'react-native-maps';
 import * as turf from '@turf/turf';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -89,13 +89,8 @@ export default function MapComponent({ navigation }) {
           longitudeDelta: 0.05,
         }}
         onPress={handleMapPress}
-        mapType="none"
+        mapType="satellite"
       >
-        <UrlTile
-          urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maximumZ={19}
-          flipY={false}
-        />
         {coordinates.map((coord, index) => (
           <Marker key={index} coordinate={coord} />
         ))}

@@ -28,7 +28,7 @@ beforeAll(async () => {
   token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'supersecret_ci_key', {
     expiresIn: '30d',
   });
-});
+}, 120000);
 
 // Close database connection after all tests
 afterAll(async () => {

@@ -11,7 +11,7 @@ beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const url = mongoServer.getUri();
   await mongoose.connect(url);
-});
+}, 120000);
 
 // Clear users before each test
 beforeEach(async () => {

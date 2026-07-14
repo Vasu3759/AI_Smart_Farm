@@ -6,7 +6,7 @@ const Prediction = require('../models/Prediction');
 const getPredictions = async (req, res) => {
   try {
     const predictions = await Prediction.find({ user: req.user.id })
-                                        .populate('farm', 'name')
+                                        .populate('farm', 'name area')
                                         .sort({ date: -1 }); // Newest first
 
     res.status(200).json({ status: 'success', count: predictions.length, data: predictions });

@@ -28,17 +28,30 @@ const getPrediction = async (req, res) => {
 
     const aiData = response.data;
 
-    // Optionally save the prediction to MongoDB if a valid farmId is passed
-    let savedPrediction = null;
-    if (farmId) {
-      savedPrediction = await Prediction.create({
-        farm: farmId,
-        user: req.user.id,
-        aiConfidenceScore: aiData.ai_confidence_score,
-        predictedYield: aiData.predicted_yield_per_area,
-        date: Date.now()
-      });
+    // Always save the prediction. Find the user's first farm, or create a default one if none exist.
+    let targetFarmId = farmId;
+    if (!targetFarmId) {
+      const Farm = require('../models/Farm');
+      let farm = await Farm.findOne({ user: req.user.id });
+      if (!farm) {
+        farm = await Farm.create({
+          user: req.user.id,
+          name: 'My Default Farm',
+          location: { type: 'Point', coordinates: [77.1025, 28.7041] },
+          area: area || 2.5,
+          cropType: 'Rice'
+        });
+      }
+      targetFarmId = farm._id;
     }
+
+    const savedPrediction = await Prediction.create({
+      farm: targetFarmId,
+      user: req.user.id,
+      aiConfidenceScore: aiData.ai_confidence_score,
+      predictedYield: aiData.predicted_yield_per_area,
+      date: Date.now()
+    });
 
     res.status(200).json({
       status: 'success',

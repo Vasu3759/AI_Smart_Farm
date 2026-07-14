@@ -56,6 +56,7 @@ const getWeatherData = async (lat, lon) => {
       condition: mockWeather.weather[0].main,
       description: mockWeather.weather[0].description,
       recommendations: generateRecommendations(mockWeather),
+      rainfall: 12,
       isMock: true
     };
   }
@@ -66,6 +67,7 @@ const getWeatherData = async (lat, lon) => {
     );
 
     const data = response.data;
+    const rainVal = data.rain ? (data.rain['1h'] || data.rain['3h'] || 0) : 0;
     return {
       location: data.name,
       temperature: data.main.temp,
@@ -73,6 +75,7 @@ const getWeatherData = async (lat, lon) => {
       condition: data.weather[0].main,
       description: data.weather[0].description,
       recommendations: generateRecommendations(data),
+      rainfall: rainVal || (data.weather[0].main.toLowerCase().includes('rain') ? 15 : 0),
       isMock: false
     };
   } catch (error) {

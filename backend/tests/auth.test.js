@@ -37,7 +37,7 @@ describe('Auth API Endpoints', () => {
         .send({
           name: 'Test User',
           identifier: 'test@example.com',
-          otp: '1234'
+          password: 'password123'
         });
       
       expect(res.statusCode).toEqual(201);
@@ -60,7 +60,7 @@ describe('Auth API Endpoints', () => {
         .send({
           name: 'Test User 2',
           identifier: 'test@example.com',
-          otp: '1234'
+          password: 'password123'
         });
       
       expect(res.statusCode).toEqual(400);
@@ -75,7 +75,7 @@ describe('Auth API Endpoints', () => {
       const user = new User({
         name: 'Login Test User',
         email: 'login@example.com',
-        password: '1234'
+        password: 'password123'
       });
       await user.save(); // save will hash the password
     });
@@ -85,7 +85,7 @@ describe('Auth API Endpoints', () => {
         .post('/api/auth/login')
         .send({
           identifier: 'login@example.com',
-          otp: '1234'
+          password: 'password123'
         });
       
       expect(res.statusCode).toEqual(200);
@@ -98,7 +98,7 @@ describe('Auth API Endpoints', () => {
         .post('/api/auth/login')
         .send({
           identifier: 'login@example.com',
-          otp: 'wrongotp'
+          password: 'wrongpassword'
         });
       
       expect(res.statusCode).toEqual(401);

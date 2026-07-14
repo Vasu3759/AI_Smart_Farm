@@ -8,16 +8,16 @@ import { API_URL } from '../config';
 
 export default function LoginScreen({ navigation }) {
   const [identifier, setIdentifier] = useState('');
-  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     try {
       const response = await axios.post(`${API_URL}/api/auth/login`, { 
         identifier: identifier.trim().toLowerCase(), 
-        otp: otp.trim() 
+        password: password 
       });
       await AsyncStorage.setItem('token', response.data.data.token);
-      navigation.replace('MainTabs'); // Change to MainTabs when App.js is updated
+      navigation.replace('Preloader');
     } catch (error) {
       Alert.alert('Login Failed', error.response?.data?.message || 'Check your credentials or network');
     }
@@ -54,22 +54,18 @@ export default function LoginScreen({ navigation }) {
           </View>
 
           <View style={styles.passwordHeader}>
-            <Text style={styles.inputLabel}>OTP</Text>
+            <Text style={styles.inputLabel}>Password</Text>
           </View>
           <View style={styles.inputContainer}>
             <Feather name="lock" size={20} color="#6B7280" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="1234 (For Mentoring)"
+              placeholder="Enter your password"
               placeholderTextColor="#9CA3AF"
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="number-pad"
+              value={password}
+              onChangeText={setPassword}
               secureTextEntry
             />
-            <TouchableOpacity style={styles.getOtpButton} onPress={() => setOtp('1234')}>
-              <Text style={styles.getOtpText}>Get OTP</Text>
-            </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
@@ -130,6 +126,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#4B5563',
     fontWeight: '500',
+    textAlign: 'center',
   },
   glassCard: {
     borderRadius: 24,

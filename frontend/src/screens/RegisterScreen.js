@@ -9,18 +9,18 @@ import { API_URL } from '../config';
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');
   const [identifier, setIdentifier] = useState('');
-  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleRegister = async () => {
     try {
       const response = await axios.post(`${API_URL}/api/auth/register`, { 
         name: name.trim(), 
         identifier: identifier.trim().toLowerCase(), 
-        otp: otp.trim() 
+        password: password
       });
       // The backend returns { status: 'success', data: { token: '...' } }
       await AsyncStorage.setItem('token', response.data.data.token);
-      navigation.replace('Dashboard');
+      navigation.replace('Preloader');
     } catch (error) {
       Alert.alert('Registration Failed', error.response?.data?.message || 'Please check your inputs.');
     }
@@ -69,21 +69,17 @@ export default function RegisterScreen({ navigation }) {
               />
             </View>
 
-            <Text style={styles.inputLabel}>OTP</Text>
+            <Text style={styles.inputLabel}>Password</Text>
             <View style={styles.inputContainer}>
               <Feather name="lock" size={20} color="#6B7280" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="1234 (For Mentoring)"
+                placeholder="Enter your password"
                 placeholderTextColor="#9CA3AF"
-                value={otp}
-                onChangeText={setOtp}
-                keyboardType="number-pad"
+                value={password}
+                onChangeText={setPassword}
                 secureTextEntry
               />
-              <TouchableOpacity style={styles.getOtpButton} onPress={() => setOtp('1234')}>
-                <Text style={styles.getOtpText}>Get OTP</Text>
-              </TouchableOpacity>
             </View>
 
             <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>

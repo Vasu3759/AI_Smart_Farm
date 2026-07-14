@@ -13,14 +13,10 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { name, identifier, otp } = req.body;
+    const { name, identifier, password } = req.body;
 
-    if (!name || !identifier || !otp) {
+    if (!name || !identifier || !password) {
       return res.status(400).json({ status: 'error', message: 'Please add all fields' });
-    }
-
-    if (otp !== '1234') {
-      return res.status(400).json({ status: 'error', message: 'Invalid OTP' });
     }
 
     const isEmail = identifier.includes('@');
@@ -33,11 +29,11 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'User already exists' });
     }
 
-    // Create user (store OTP as password for now)
+    // Create user
     const user = await User.create({
       name,
       ...(isEmail ? { email: identifier } : { phone: identifier }),
-      password: otp,
+      password,
     });
 
     if (user) {
@@ -64,11 +60,7 @@ const registerUser = async (req, res) => {
 // @access  Public
 const loginUser = async (req, res) => {
   try {
-    const { identifier, otp } = req.body;
-
-    if (otp !== '1234') {
-      return res.status(401).json({ status: 'error', message: 'Invalid OTP' });
-    }
+    const { identifier, password } = req.body;
 
     const isEmail = identifier.includes('@');
     const query = isEmail ? { email: identifier } : { phone: identifier };
@@ -81,7 +73,7 @@ const loginUser = async (req, res) => {
     }
 
     // Check password
-    const isMatch = await user.matchPassword(otp);
+    const isMatch = await user.matchPassword(password);
 
     if (isMatch) {
       res.json({

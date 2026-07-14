@@ -89,7 +89,7 @@ export default function MapComponent({ navigation }) {
           longitudeDelta: 0.05,
         }}
         onPress={handleMapPress}
-        mapType="satellite"
+        mapType="standard"
       >
         {coordinates.map((coord, index) => (
           <Marker key={index} coordinate={coord} />

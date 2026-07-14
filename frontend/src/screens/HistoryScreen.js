@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -38,42 +38,72 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <View style={styles.brandRow}>
-          <MaterialCommunityIcons name="tractor" size={28} color="#064E3B" />
-          <Text style={styles.brandTitle}>AgriYield AI</Text>
+      {/* Top Header */}
+      <View style={styles.topHeader}>
+        <View style={styles.brandContainer}>
+          <View style={styles.logoBadge}>
+            <MaterialCommunityIcons name="tractor" size={24} color="#FFF" />
+          </View>
+          <View>
+            <Text style={styles.brandText}>AgriYield AI</Text>
+            <Text style={styles.brandSub}>PRECISION ARCHIVE</Text>
+          </View>
         </View>
+        <TouchableOpacity style={styles.refreshButton} onPress={fetchHistory} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator size="small" color="#115E59" />
+          ) : (
+            <Feather name="refresh-cw" size={18} color="#115E59" />
+          )}
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.pageTitle}>Prediction History</Text>
-      
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 25, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <Text style={styles.pageTitle}>Prediction History</Text>
+        <Text style={styles.pageSubtitle}>Review and track historical crop yield estimations and metrics.</Text>
+
         {loading ? (
-          <ActivityIndicator size="large" color="#064E3B" style={{marginTop: 50}} />
+          <ActivityIndicator size="large" color="#0F766E" style={{marginTop: 50}} />
         ) : predictions.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Feather name="inbox" size={50} color="#9CA3AF" />
-            <Text style={styles.emptyText}>No predictions found.</Text>
-            <Text style={styles.emptySub}>Go to the Predict tab to run your first AI harvest estimation.</Text>
+            <View style={styles.emptyIconBg}>
+              <Feather name="folder-minus" size={40} color="#9CA3AF" />
+            </View>
+            <Text style={styles.emptyText}>No History Recorded</Text>
+            <Text style={styles.emptySub}>Draw fields and run the AI prediction model to see results archived here.</Text>
           </View>
         ) : (
           predictions.map((pred) => (
             <View key={pred._id} style={styles.predictionCard}>
-              <View style={styles.predLeft}>
-                <View style={styles.predIconBg}>
-                  <Feather name="trending-up" size={20} color="#1F2937" />
+              <View style={styles.cardHeader}>
+                <View style={styles.cardHeaderLeft}>
+                  <View style={styles.leafIconBg}>
+                    <MaterialCommunityIcons name="leaf" size={20} color="#0F766E" />
+                  </View>
+                  <View>
+                    <Text style={styles.predTitle}>
+                      {pred.farm?.name ? pred.farm.name : 'Unknown Field'}
+                    </Text>
+                    <Text style={styles.predDate}>{formatDate(pred.date)}</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.predTitle}>
-                    {pred.farm?.name ? `${pred.farm.name} - Yield Est.` : 'Field - Yield Est.'}
-                  </Text>
-                  <Text style={styles.predSub}>{formatDate(pred.date)}</Text>
-                </View>
+
               </View>
-              <View style={styles.predRight}>
-                <Text style={styles.predValue}>{pred.predictedYield ? pred.predictedYield.toFixed(0) : '0'}</Text>
-                <Text style={styles.predUnit}>bu/ac</Text>
-                <Text style={styles.predGrowth}>AI Generated</Text>
+
+              <View style={styles.separator} />
+
+              <View style={styles.cardBody}>
+                <View style={styles.metricItem}>
+                  <Text style={styles.metricLabel}>ESTIMATED OUTPUT</Text>
+                  <View style={styles.metricValRow}>
+                    <Text style={styles.metricValLarge}>{pred.predictedYield ? pred.predictedYield.toFixed(2) : '0.00'}</Text>
+                    <Text style={styles.metricUnit}> Tons/HA</Text>
+                  </View>
+                </View>
+                <View style={styles.metricItemRight}>
+                  <Text style={styles.metricLabel}>FIELD AREA</Text>
+                  <Text style={styles.metricValSmall}>{pred.farm?.area ? `${pred.farm.area} HA` : 'N/A'}</Text>
+                </View>
               </View>
             </View>
           ))
@@ -86,106 +116,177 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F3F4F6', // Light gray background
   },
-  headerRow: {
+  topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 30,
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 20,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  brandRow: {
+  brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  brandTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#064E3B',
-    marginLeft: 10,
+  logoBadge: {
+    backgroundColor: '#064E3B',
+    padding: 10,
+    borderRadius: 12,
+    marginRight: 12,
   },
-  pageTitle: {
-    fontSize: 32,
+  brandText: {
+    fontSize: 20,
     fontWeight: '900',
     color: '#064E3B',
-    paddingHorizontal: 20,
-    marginBottom: 10,
+  },
+  brandSub: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#9CA3AF',
+    letterSpacing: 1.5,
+  },
+  refreshButton: {
+    backgroundColor: '#E6F4F1',
+    padding: 10,
+    borderRadius: 12,
+  },
+  pageTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 6,
+  },
+  pageSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+    marginBottom: 25,
   },
   emptyContainer: {
     alignItems: 'center',
     marginTop: 60,
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  emptyIconBg: {
+    backgroundColor: '#F3F4F6',
+    padding: 20,
+    borderRadius: 50,
+    marginBottom: 15,
   },
   emptyText: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#374151',
-    marginTop: 15,
+    marginBottom: 8,
   },
   emptySub: {
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
-    marginTop: 10,
-    paddingHorizontal: 30,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   predictionCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: '#FFF',
-    borderRadius: 16,
+    borderRadius: 24,
     padding: 20,
     marginBottom: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  predLeft: {
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
-  predIconBg: {
-    backgroundColor: '#F3F4F6',
-    width: 45,
-    height: 45,
-    borderRadius: 12,
+  leafIconBg: {
+    backgroundColor: '#E6F4F1',
+    width: 42,
+    height: 42,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 12,
   },
   predTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#1F2937',
-    marginBottom: 3,
   },
-  predSub: {
+  predDate: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#9CA3AF',
+    fontWeight: '600',
   },
-  predRight: {
+  confBadge: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  confText: {
+    color: '#065F46',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 15,
+  },
+  cardBody: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-end',
   },
-  predValue: {
-    fontSize: 22,
+  metricItem: {
+    flex: 1,
+  },
+  metricItemRight: {
+    alignItems: 'flex-end',
+  },
+  metricLabel: {
+    fontSize: 9,
     fontWeight: '800',
+    color: '#9CA3AF',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  metricValRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  metricValLarge: {
+    fontSize: 26,
+    fontWeight: '900',
     color: '#064E3B',
   },
-  predUnit: {
+  metricUnit: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '600',
-    marginBottom: 3,
-  },
-  predGrowth: {
-    fontSize: 11,
-    color: '#10B981',
     fontWeight: '700',
+    color: '#4B5563',
+  },
+  metricValSmall: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1F2937',
   }
 });

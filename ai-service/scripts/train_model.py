@@ -155,7 +155,7 @@ plt.barh(
 plt.title("Feature Importance")
 plt.xlabel("Importance")
 plt.tight_layout()
-plt.show()
+plt.savefig("feature_importance.png")
 
 # =====================================================
 # SAVE MODEL

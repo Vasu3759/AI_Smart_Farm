@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -11,6 +12,7 @@ import FarmDataFormScreen from './src/screens/FarmDataFormScreen';
 import MapScreen from './src/screens/MapScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import PreloaderScreen from './src/screens/PreloaderScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -54,11 +56,25 @@ function MainTabs() {
 }
 
 export default function App() {
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          console.log('Location permission granted on startup.');
+        }
+      } catch (err) {
+        console.log('Startup location request error:', err);
+      }
+    })();
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Preloader" component={PreloaderScreen} options={{ headerShown: false }} />
         <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
         <Stack.Screen 
           name="Map" 

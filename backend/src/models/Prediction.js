@@ -26,6 +26,13 @@ const predictionSchema = new mongoose.Schema({
   predictedYield: {
     type: Number
   },
+  crop: {
+    type: String
+  },
+  N: Number,
+  P: Number,
+  K: Number,
+  pH: Number,
   weatherContext: {
     temperature: Number,
     humidity: Number,

@@ -28,26 +28,46 @@ const getPrediction = async (req, res) => {
 
     const aiData = response.data;
 
-    // Always save the prediction. Find the user's first farm, or create a default one if none exist.
+    // Find the user's active farm, or return an error if they haven't registered any fields yet.
     let targetFarmId = farmId;
     if (!targetFarmId) {
       const Farm = require('../models/Farm');
       let farm = await Farm.findOne({ user: req.user.id });
       if (!farm) {
-        farm = await Farm.create({
-          user: req.user.id,
-          name: 'My Default Farm',
-          location: { type: 'Point', coordinates: [77.1025, 28.7041] },
-          area: area || 2.5,
-          cropType: 'Rice'
+        return res.status(400).json({ 
+          status: 'error', 
+          message: 'No registered fields found. Please add a field on the home dashboard first.' 
         });
       }
       targetFarmId = farm._id;
     }
 
+    const CROP_MAPPING = {
+      '41': 'Rice',
+      '54': 'Wheat',
+      '24': 'Maize',
+      '47': 'Sugarcane',
+      '11': 'Cotton',
+      '38': 'Potato',
+      '31': 'Onion',
+      '3': 'Banana',
+      '4': 'Barley'
+    };
+    const cropName = CROP_MAPPING[crop.toString()] || 'Rice';
+
     const savedPrediction = await Prediction.create({
       farm: targetFarmId,
       user: req.user.id,
+      crop: cropName,
+      N: parseFloat(N) || 0,
+      P: parseFloat(P) || 0,
+      K: parseFloat(K) || 0,
+      pH: parseFloat(pH) || 0,
+      weatherContext: {
+        temperature: parseFloat(temperature) || 0,
+        humidity: parseFloat(humidity) || 0,
+        rainfall: parseFloat(rainfall) || 0
+      },
       aiConfidenceScore: aiData.ai_confidence_score,
       predictedYield: aiData.predicted_yield_per_area,
       date: Date.now()

@@ -22,6 +22,7 @@ const farmRoutes = require('./src/routes/farmRoutes');
 const aiRoutes = require('./src/routes/aiRoutes');
 const weatherRoutes = require('./src/routes/weatherRoutes');
 const predictionRoutes = require('./src/routes/predictionRoutes');
+const marketRoutes = require('./src/routes/marketRoutes');
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
@@ -29,6 +30,8 @@ app.use('/api/farms', farmRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/predictions', predictionRoutes);
+app.use('/api/market', marketRoutes);
+
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

@@ -38,7 +38,31 @@ const createFarm = async (req, res) => {
   }
 };
 
+// @desc    Delete a farm
+// @route   DELETE /api/farms/:id
+// @access  Private
+const deleteFarm = async (req, res) => {
+  try {
+    const farm = await Farm.findOne({ _id: req.params.id, user: req.user.id });
+
+    if (!farm) {
+      return res.status(404).json({ status: 'error', message: 'Farm field not found' });
+    }
+
+    await Farm.deleteOne({ _id: req.params.id });
+
+    // Delete prediction history linked to this farm
+    const Prediction = require('../models/Prediction');
+    await Prediction.deleteMany({ farm: req.params.id });
+
+    res.status(200).json({ status: 'success', message: 'Farm field deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 module.exports = {
   getFarms,
-  createFarm
+  createFarm,
+  deleteFarm
 };

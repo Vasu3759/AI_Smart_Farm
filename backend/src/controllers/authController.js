@@ -51,6 +51,7 @@ const registerUser = async (req, res) => {
       res.status(400).json({ status: 'error', message: 'Invalid user data' });
     }
   } catch (error) {
+    console.error('Registration Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -104,8 +105,41 @@ const getMe = async (req, res) => {
   });
 };
 
+// @desc    Update user profile data
+// @route   PUT /api/auth/update
+// @access  Private
+const updateMe = async (req, res) => {
+  try {
+    const { name, phone, email } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    if (name) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (email !== undefined) user.email = email;
+
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getMe,
+  updateMe
 };

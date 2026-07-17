@@ -100,6 +100,32 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
+  const handleDeleteFarm = (id, name) => {
+    Alert.alert(
+      'Delete Field',
+      `Are you sure you want to delete "${name}"? This will also remove its associated yield prediction archives.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              await axios.delete(`${API_URL}/api/farms/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              Alert.alert('Success', 'Field deleted successfully');
+              fetchData();
+            } catch (error) {
+              Alert.alert('Error', error.response?.data?.message || 'Failed to delete field.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchData();
@@ -115,7 +141,7 @@ export default function DashboardScreen({ navigation }) {
             <MaterialCommunityIcons name="tractor" size={24} color="#FFF" />
           </View>
           <View>
-            <Text style={styles.brandText}>AgriYield AI</Text>
+            <Text style={styles.brandText}>AgriYield</Text>
             <Text style={styles.brandSub}>PRECISION HARVEST PLATFORM</Text>
           </View>
         </View>
@@ -207,18 +233,29 @@ export default function DashboardScreen({ navigation }) {
           </View>
         ) : (
           farms.map((farm) => (
-            <TouchableOpacity key={farm._id} style={styles.fieldCard} onPress={() => navigation.navigate('Predict', { area: farm.area, farmId: farm._id })}>
-              <View style={styles.fieldLeft}>
+            <View key={farm._id} style={styles.fieldCard}>
+              <TouchableOpacity 
+                style={styles.fieldCardMain} 
+                onPress={() => navigation.navigate('Predict', { area: farm.area, farmId: farm._id })}
+                activeOpacity={0.6}
+              >
                 <View style={styles.fieldIconBg}>
                   <MaterialCommunityIcons name="leaf" size={22} color="#0F766E" />
                 </View>
-                <View>
-                  <Text style={styles.fieldName}>{farm.name}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldName} numberOfLines={1}>{farm.name}</Text>
                   <Text style={styles.fieldDetail}>{farm.cropType || 'Crop'} • {farm.area} hectares</Text>
                 </View>
-              </View>
-              <Feather name="arrow-up-right" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
+                <Feather name="arrow-up-right" size={20} color="#94A3B8" style={{ marginRight: 8 }} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.deleteIconButton} 
+                onPress={() => handleDeleteFarm(farm._id, farm.name)}
+                activeOpacity={0.5}
+              >
+                <Feather name="trash-2" size={18} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
           ))
         )}
 
@@ -310,18 +347,23 @@ export default function DashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6', // Light gray background
+    backgroundColor: '#F8FAFC', // Sleek, modern off-white background
   },
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingTop: 55,
+    paddingBottom: 18,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#F1F5F9', // Muted clean separator
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 5,
+    elevation: 2,
   },
   brandContainer: {
     flexDirection: 'row',
@@ -330,64 +372,70 @@ const styles = StyleSheet.create({
   logoBadge: {
     backgroundColor: '#064E3B',
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     marginRight: 12,
   },
   brandText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '900',
     color: '#064E3B',
+    letterSpacing: -0.5,
   },
   brandSub: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
-    color: '#9CA3AF',
+    color: '#94A3B8',
     letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
   notificationButton: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     position: 'relative',
   },
   activeDot: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    top: 9,
+    right: 9,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFF',
   },
   welcomeSubtitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#6B7280',
+    color: '#0F766E',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    marginBottom: 6,
+    textTransform: 'uppercase',
   },
   welcomeTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#111827',
+    color: '#1E293B',
     marginBottom: 6,
+    letterSpacing: -0.5,
   },
   welcomeDesc: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#64748B',
     lineHeight: 20,
-    marginBottom: 25,
+    marginBottom: 24,
   },
   weatherCard: {
     backgroundColor: '#064E3B',
     borderRadius: 24,
     padding: 24,
-    marginBottom: 20,
+    marginBottom: 24,
     shadowColor: '#064E3B',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   },
   weatherRow: {
     flexDirection: 'row',
@@ -409,22 +457,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   tempGroup: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    marginTop: 2,
   },
   weatherTemp: {
     color: '#FFF',
-    fontSize: 48,
+    fontSize: 46,
     fontWeight: '900',
-    marginRight: 10,
+    letterSpacing: -1,
+    lineHeight: 48,
   },
   weatherDesc: {
-    color: '#E6F4F1',
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#F0FDFA',
+    fontSize: 14,
+    fontWeight: '800',
+    textTransform: 'capitalize',
+    marginTop: 4,
   },
   weatherRight: {
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingLeft: 10,
   },
   weatherStatusText: {
     color: '#A7F3D0',
@@ -436,10 +488,10 @@ const styles = StyleSheet.create({
   weatherBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
-    paddingTop: 14,
+    borderTopColor: 'rgba(255, 255, 255, 0.12)',
+    paddingTop: 16,
     justifyContent: 'space-around',
   },
   weatherSubMetric: {
@@ -447,25 +499,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weatherSubText: {
-    color: '#A7F3D0',
+    color: '#E0F2FE',
     fontSize: 13,
     fontWeight: '700',
   },
   weatherSubSeparator: {
     width: 1,
-    height: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    height: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   overviewStatsRow: {
     flexDirection: 'row',
     backgroundColor: '#FFF',
     borderRadius: 24,
-    paddingVertical: 18,
+    paddingVertical: 20,
     marginBottom: 25,
-    shadowColor: '#000',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 3,
   },
   statBox: {
@@ -473,91 +527,120 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 24,
-    fontWeight: '950',
+    fontSize: 26,
+    fontWeight: '900',
     color: '#064E3B',
+    letterSpacing: -0.5,
   },
   statLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#6B7280',
-    marginTop: 2,
+    color: '#64748B',
+    marginTop: 3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statSeparator: {
     width: 1,
     height: '60%',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F1F5F9',
+    alignSelf: 'center',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 16,
     marginTop: 10,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '850',
-    color: '#111827',
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 3,
+    elevation: 1,
   },
   addButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#0F766E',
+    color: '#064E3B',
   },
   emptyFieldsCard: {
     backgroundColor: '#FFF',
     borderRadius: 24,
-    padding: 24,
+    padding: 28,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.03)',
+    borderColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
   },
   emptyCardText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#374151',
+    color: '#334155',
   },
   emptyCardSub: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#64748B',
     textAlign: 'center',
     marginTop: 4,
   },
   fieldCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.02,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 2,
+    paddingRight: 16,
+  },
+  fieldCardMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingLeft: 14,
+  },
+  deleteIconButton: {
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fieldLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   fieldIconBg: {
-    backgroundColor: '#E6F4F1',
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    backgroundColor: '#F0FDF4', // Softer light green
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
@@ -565,12 +648,12 @@ const styles = StyleSheet.create({
   fieldName: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#0F172A',
     marginBottom: 2,
   },
   fieldDetail: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#64748B',
     fontWeight: '600',
   },
   predictionCard: {
@@ -581,9 +664,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.03,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -592,10 +677,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   predIconBg: {
-    backgroundColor: '#F3F4F6',
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
@@ -603,42 +688,44 @@ const styles = StyleSheet.create({
   predFieldName: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#0F172A',
     marginBottom: 2,
   },
   predDate: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontWeight: '600',
   },
   predRight: {
     alignItems: 'flex-end',
   },
   predYieldValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '900',
     color: '#064E3B',
+    letterSpacing: -0.5,
   },
   predYieldUnit: {
     fontSize: 10,
-    color: '#6B7280',
+    color: '#64748B',
     fontWeight: '800',
+    textTransform: 'uppercase',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)', // Premium darker blur effect overlay
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: '#FFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
     padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
+    shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowRadius: 20,
+    elevation: 15,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -646,16 +733,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#F1F5F9',
     paddingBottom: 15,
   },
   modalTitle: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '900',
     color: '#064E3B',
   },
   closeBtn: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
     padding: 8,
     borderRadius: 50,
   },
@@ -675,11 +762,11 @@ const styles = StyleSheet.create({
   alertGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
     marginBottom: 20,
   },
   alertGridItem: {
@@ -689,46 +776,52 @@ const styles = StyleSheet.create({
   alertGridLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#9CA3AF',
+    color: '#94A3B8',
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   alertGridValue: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#1F2937',
+    color: '#0F172A',
   },
   adviceCard: {
-    backgroundColor: '#E6F4F1',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#ECFDF5', // Sage / emerald tint
+    borderRadius: 18,
+    padding: 18,
     borderLeftWidth: 4,
-    borderLeftColor: '#0F766E',
+    borderLeftColor: '#10B981',
   },
   adviceHeader: {
-    fontSize: 10,
-    fontWeight: '855',
-    color: '#0F766E',
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#064E3B',
     letterSpacing: 1,
     marginBottom: 6,
+    textTransform: 'uppercase',
   },
   adviceText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
-    lineHeight: 18,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#064E3B',
+    lineHeight: 20,
   },
   dismissButton: {
-    backgroundColor: '#0F766E',
+    backgroundColor: '#064E3B',
     height: 54,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 15,
+    shadowColor: '#064E3B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
   },
   dismissButtonText: {
     color: '#FFF',
-    fontSize: 15,
-    fontWeight: '850',
+    fontSize: 16,
+    fontWeight: '700',
   }
 });

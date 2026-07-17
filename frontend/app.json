@@ -18,7 +18,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "READ_FROM_APP_CONFIG"
+          "apiKey": "API_KEY_NOT_FOUND"
         }
       }
     },
@@ -27,6 +27,18 @@
     },
     "plugins": [
       "expo-status-bar"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "82c62c6a-4d5a-4494-918e-a5a938efb927"
+      }
+    },
+    "owner": "vasu_379",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/82c62c6a-4d5a-4494-918e-a5a938efb927"
+    }
   }
 }

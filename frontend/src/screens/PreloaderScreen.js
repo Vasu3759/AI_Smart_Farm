@@ -79,7 +79,7 @@ export default function PreloaderScreen({ navigation }) {
         </Animated.View>
 
         {/* Brand Name */}
-        <Text style={styles.brandTitle}>AgriYield AI</Text>
+        <Text style={styles.brandTitle}>AgriYield</Text>
         <Text style={styles.brandSubtitle}>PRECISION HARVEST ENGINE</Text>
 
         {/* Spinning loader ring */}

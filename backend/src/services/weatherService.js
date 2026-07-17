@@ -79,8 +79,22 @@ const getWeatherData = async (lat, lon) => {
       isMock: false
     };
   } catch (error) {
-    console.error("OpenWeather API Error:", error.message);
-    throw new Error('Failed to fetch weather data');
+    console.error("OpenWeather API Error (falling back to mock data):", error.message);
+    const mockWeather = {
+      main: { temp: 28, humidity: 65 },
+      weather: [{ main: "Clouds", description: "scattered clouds" }],
+      name: "Mock City (Weather Fallback)"
+    };
+    return {
+      location: mockWeather.name,
+      temperature: mockWeather.main.temp,
+      humidity: mockWeather.main.humidity,
+      condition: mockWeather.weather[0].main,
+      description: mockWeather.weather[0].description,
+      recommendations: generateRecommendations(mockWeather),
+      rainfall: 800, // matching average agricultural needs
+      isMock: true
+    };
   }
 };
 

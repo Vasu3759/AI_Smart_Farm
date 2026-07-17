@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, ImageBackground, Modal, TextInput, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,6 +10,40 @@ export default function ProfileScreen({ navigation }) {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ farms: 0, predictions: 0 });
   const [loading, setLoading] = useState(true);
+
+  // Edit Profile Modal States
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [updating, setUpdating] = useState(false);
+
+  const handleUpdateProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Validation Error', 'Full Name is required.');
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.put(`${API_URL}/api/auth/update`, {
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        email: editEmail.trim()
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setUser(response.data.data);
+      setEditModalVisible(false);
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to update profile.');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const fetchProfileData = async () => {
     try {
@@ -68,7 +102,7 @@ export default function ProfileScreen({ navigation }) {
               <View style={styles.headerOverlay}>
                 <View style={styles.brandBadge}>
                   <MaterialCommunityIcons name="tractor" size={24} color="#FFF" />
-                  <Text style={styles.brandText}>AgriYield AI</Text>
+                  <Text style={styles.brandText}>AgriYield</Text>
                 </View>
               </View>
             </ImageBackground>
@@ -78,9 +112,29 @@ export default function ProfileScreen({ navigation }) {
               <View style={styles.avatarContainer}>
                 <Feather name="user" size={40} color="#064E3B" />
               </View>
-              <Text style={styles.name}>{user?.name || 'Farmer Member'}</Text>
-              <Text style={styles.email}>{user?.email || 'farmer@agriyield.ai'}</Text>
-              {user?.phone && <Text style={styles.phone}>{user.phone}</Text>}
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{user?.name || 'Farmer Member'}</Text>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setEditName(user?.name || '');
+                    setEditPhone(user?.phone || '');
+                    setEditEmail(user?.email || '');
+                    setEditModalVisible(true);
+                  }} 
+                  style={styles.editIconBtn}
+                  activeOpacity={0.6}
+                >
+                  <Feather name="edit-2" size={14} color="#064E3B" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.email}>{user?.email || 'No email registered'}</Text>
+              <Text style={styles.phone}>{user?.phone || 'No phone number registered'}</Text>
+              <View style={styles.memberSinceRow}>
+                <Feather name="calendar" size={12} color="#64748B" style={{ marginRight: 4 }} />
+                <Text style={styles.memberSinceText}>
+                  Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'July 2026'}
+                </Text>
+              </View>
             </View>
 
             {/* Stats Card */}
@@ -144,6 +198,68 @@ export default function ProfileScreen({ navigation }) {
           </>
         )}
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal visible={editModalVisible} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile Info</Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)} style={styles.closeBtn}>
+                <Feather name="x" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputLabel}>Full Name</Text>
+              <View style={styles.inputWrapper}>
+                <Feather name="user" size={18} color="#0F766E" style={{ marginRight: 10 }} />
+                <TextInput 
+                  style={styles.input} 
+                  placeholder="Your Full Name" 
+                  value={editName} 
+                  onChangeText={setEditName} 
+                />
+              </View>
+
+              <Text style={styles.inputLabel}>Phone Number</Text>
+              <View style={styles.inputWrapper}>
+                <Feather name="phone" size={18} color="#0F766E" style={{ marginRight: 10 }} />
+                <TextInput 
+                  style={styles.input} 
+                  placeholder="Your Phone Number" 
+                  keyboardType="numeric"
+                  value={editPhone} 
+                  onChangeText={setEditPhone} 
+                />
+              </View>
+
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <View style={styles.inputWrapper}>
+                <Feather name="mail" size={18} color="#0F766E" style={{ marginRight: 10 }} />
+                <TextInput 
+                  style={styles.input} 
+                  placeholder="Your Email Address" 
+                  autoCapitalize="none"
+                  value={editEmail} 
+                  onChangeText={setEditEmail} 
+                />
+              </View>
+
+              <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={updating}>
+                {updating ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Feather name="check" size={18} color="#FFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -151,7 +267,7 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F8FAFC',
   },
   headerBackground: {
     height: 180,
@@ -159,26 +275,27 @@ const styles = StyleSheet.create({
   },
   headerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(6, 78, 59, 0.4)', // Dark green tint overlay
+    backgroundColor: 'rgba(6, 78, 59, 0.45)', // Richer green tint overlay
     paddingTop: 50,
     paddingHorizontal: 24,
   },
   brandBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   brandText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#FFF',
     marginLeft: 8,
+    letterSpacing: 0.5,
   },
   profileCard: {
     backgroundColor: '#FFF',
@@ -187,39 +304,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 20,
     marginTop: -50, // Overlap the header background
-    marginBottom: 15,
-    shadowColor: '#000',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 6,
   },
   avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: '#E6F4F1',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
     borderWidth: 4,
     borderColor: '#FFF',
-    marginTop: -20, // push up slightly
+    marginTop: -24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
   },
   name: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#1F2937',
+    color: '#0F172A',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   email: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#64748B',
     fontWeight: '600',
   },
   phone: {
-    fontSize: 14,
-    color: '#9CA3AF',
+    fontSize: 13,
+    color: '#94A3B8',
     fontWeight: '600',
     marginTop: 4,
   },
@@ -231,10 +356,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 20,
     marginBottom: 20,
-    shadowColor: '#000',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 3,
   },
   statBox: {
@@ -245,53 +372,59 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '900',
     color: '#064E3B',
+    letterSpacing: -0.5,
   },
   statLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#9CA3AF',
-    marginTop: 2,
+    color: '#64748B',
+    marginTop: 3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statSeparator: {
     width: 1,
     height: '60%',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F1F5F9',
   },
   menuHeader: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    color: '#6B7280',
-    letterSpacing: 1.2,
+    color: '#64748B',
+    letterSpacing: 1.5,
     marginTop: 10,
     marginBottom: 12,
     paddingLeft: 4,
+    textTransform: 'uppercase',
   },
   menuCard: {
     backgroundColor: '#FFF',
     borderRadius: 24,
     paddingHorizontal: 20,
     marginBottom: 25,
-    shadowColor: '#000',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 3,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 15,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuIconBg: {
-    backgroundColor: '#E6F4F1',
+    backgroundColor: '#F0FDF4', // Soft sage-green background
     width: 38,
     height: 38,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -299,28 +432,131 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#1E293B',
   },
   separator: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#FEF2F2', // Elegant very soft red
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
     paddingVertical: 15,
     borderRadius: 18,
     justifyContent: 'center',
     shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 5,
+    elevation: 2,
   },
   logoutText: {
     color: '#EF4444',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  editIconBtn: {
+    marginLeft: 8,
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F0FDF4',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 52,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F766E',
+    height: 54,
+    borderRadius: 18,
+    justifyContent: 'center',
+    marginTop: 10,
+    shadowColor: '#0F766E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  saveBtnText: {
+    color: '#FFF',
     fontSize: 16,
     fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  memberSinceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  memberSinceText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
   }
 });

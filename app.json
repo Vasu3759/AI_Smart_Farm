@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "cae27df8-aea4-4234-a4b2-c99deb8379ab"
+      }
+    },
+    "android": {
+      "package": "com.agriyield"
+    }
+  }
+}

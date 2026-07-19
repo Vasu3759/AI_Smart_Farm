@@ -2,6 +2,7 @@
   "expo": {
     "name": "frontend",
     "slug": "frontend",
+    "newArchEnabled": false,
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,6 +11,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.agriyield",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -18,7 +20,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "API_KEY_NOT_FOUND"
+          "apiKey": "AIzaSyFakeKeyFakeKeyFakeKeyFakeKey"
         }
       }
     },

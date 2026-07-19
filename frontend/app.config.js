@@ -3,10 +3,11 @@ export default ({ config }) => {
     ...config,
     android: {
       ...config.android,
+      package: "com.agriyield",
       config: {
         ...config.android?.config,
         googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY || "API_KEY_NOT_FOUND"
+          apiKey: process.env.GOOGLE_MAPS_API_KEY || "AIzaSyFakeKeyFakeKeyFakeKeyFakeKey"
         }
       }
     }

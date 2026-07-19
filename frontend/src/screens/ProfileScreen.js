@@ -165,7 +165,7 @@ export default function ProfileScreen({ navigation }) {
           <>
             {/* Header Image Background with Farm picture */}
             <ImageBackground 
-              source={require('../../assets/login_bg.png')} 
+              source={require('../../assets/login_bg.jpg')} 
               style={styles.headerBackground}
             >
               <View style={styles.headerOverlay}>

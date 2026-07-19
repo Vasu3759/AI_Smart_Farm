@@ -35,7 +35,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <ImageBackground 
-      source={require('../../assets/login_bg.png')} 
+      source={require('../../assets/login_bg.jpg')} 
       style={styles.backgroundImage}
     >
       <View style={styles.overlay}>

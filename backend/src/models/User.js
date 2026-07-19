@@ -28,6 +28,14 @@ const userSchema = new mongoose.Schema({
     minlength: 4,
     select: false
   },
+  pushEnabled: {
+    type: Boolean,
+    default: true
+  },
+  emailEnabled: {
+    type: Boolean,
+    default: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

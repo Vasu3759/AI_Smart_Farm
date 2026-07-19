@@ -4,9 +4,11 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { API_URL } from '../config';
 
 export default function HistoryScreen() {
+  const { t } = useTranslation();
   const [predictions, setPredictions] = useState([]);
   const [marketPrices, setMarketPrices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,8 +93,8 @@ export default function HistoryScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.pageTitle}>Prediction History</Text>
-        <Text style={styles.pageSubtitle}>Review and track historical crop yield estimations and metrics.</Text>
+        <Text style={styles.pageTitle}>{t('history.title')}</Text>
+        <Text style={styles.pageSubtitle}>{t('history.subtitle')}</Text>
 
         {loading ? (
           <ActivityIndicator size="large" color="#064E3B" style={{ marginTop: 50 }} />
@@ -101,8 +103,7 @@ export default function HistoryScreen() {
             <View style={styles.emptyIconBg}>
               <Feather name="folder-minus" size={40} color="#94A3B8" />
             </View>
-            <Text style={styles.emptyText}>No History Recorded</Text>
-            <Text style={styles.emptySub}>Draw fields and run the AI prediction model to see results archived here.</Text>
+            <Text style={styles.emptyText}>{t('history.no_history')}</Text>
           </View>
         ) : (
           predictions.map((pred) => {

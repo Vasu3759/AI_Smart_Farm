@@ -1,3 +1,25 @@
+# Environment variables
 .env
+.env.*
+!.env.example
+
+# Node
 node_modules/
+npm-debug.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+venv/
+.venv/
+
+# Expo / React Native
+.expo/
+dist/
+web-build/
+*.jks
+*.keystore
+
+# OS Files
 .DS_Store

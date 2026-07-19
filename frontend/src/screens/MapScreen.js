@@ -4,21 +4,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 import { API_URL } from '../config';
 
-const CROPS = [
-  { label: 'Rice 🌾', value: 'Rice' },
-  { label: 'Wheat 🌾', value: 'Wheat' },
-  { label: 'Maize 🌽', value: 'Maize' },
-  { label: 'Sugarcane 🎋', value: 'Sugarcane' },
-  { label: 'Cotton ☁️', value: 'Cotton' },
-  { label: 'Potato 🥔', value: 'Potato' },
-  { label: 'Onion 🧅', value: 'Onion' },
-  { label: 'Banana 🍌', value: 'Banana' },
-  { label: 'Barley 🌾', value: 'Barley' }
+const CROPS_KEYS = [
+  { key: 'crops.rice', value: 'Rice' },
+  { key: 'crops.wheat', value: 'Wheat' },
+  { key: 'crops.maize', value: 'Maize' },
+  { key: 'crops.sugarcane', value: 'Sugarcane' },
+  { key: 'crops.cotton', value: 'Cotton' },
+  { key: 'crops.potato', value: 'Potato' },
+  { key: 'crops.onion', value: 'Onion' },
+  { key: 'crops.banana', value: 'Banana' },
+  { key: 'crops.barley', value: 'Barley' }
 ];
 
 export default function MapScreen({ navigation }) {
+  const { t } = useTranslation();
+  const CROPS = CROPS_KEYS.map(c => ({ label: t(c.key), value: c.value }));
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [cropType, setCropType] = useState('Rice');
@@ -28,8 +31,9 @@ export default function MapScreen({ navigation }) {
   const [cropModal, setCropModal] = useState(false);
 
   useEffect(() => {
+    navigation.setOptions({ title: t('map.header_title') });
     fetchCurrentLocation();
-  }, []);
+  }, [navigation, t]);
 
   const fetchCurrentLocation = async () => {
     setGpsLoading(true);
@@ -48,12 +52,12 @@ export default function MapScreen({ navigation }) {
 
   const handleSaveField = async () => {
     if (!name.trim()) {
-      Alert.alert('Validation Error', 'Please enter a name for your field.');
+      Alert.alert('Validation Error', t('map.validation_name'));
       return;
     }
     const areaVal = parseFloat(area);
     if (isNaN(areaVal) || areaVal <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid field size in hectares.');
+      Alert.alert('Validation Error', t('map.validation_area'));
       return;
     }
 
@@ -84,12 +88,12 @@ export default function MapScreen({ navigation }) {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      Alert.alert('Success', 'Field registered successfully!');
+      Alert.alert('Success', t('map.success'));
       setName('');
       setArea('');
       navigation.navigate('MainTabs');
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to register field.');
+      Alert.alert('Error', error.response?.data?.message || t('map.error'));
     } finally {
       setLoading(false);
     }
@@ -105,29 +109,29 @@ export default function MapScreen({ navigation }) {
           </View>
           <View>
             <Text style={styles.brandText}>AgriYield</Text>
-            <Text style={styles.brandSub}>FIELD REGISTER</Text>
+            <Text style={styles.brandSub}>{t('map.field_register')}</Text>
           </View>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.pageTitle}>Add New Field</Text>
-        <Text style={styles.pageSubtitle}>Register your field's parameters to run specialized yield predictions and track weather updates.</Text>
+        <Text style={styles.pageTitle}>{t('map.add_new_field')}</Text>
+        <Text style={styles.pageSubtitle}>{t('map.subtitle')}</Text>
 
         <View style={styles.card}>
-          <Text style={styles.inputLabel}>Field / Farm Name</Text>
+          <Text style={styles.inputLabel}>{t('map.farm_name')}</Text>
           <View style={styles.inputWrapper}>
             <Feather name="map" size={18} color="#0F766E" style={{ marginRight: 10 }} />
             <TextInput 
               style={styles.input} 
-              placeholder="e.g. North Wheat Cultivation" 
+              placeholder={t('map.farm_name_placeholder')} 
               placeholderTextColor="#94A3B8"
               value={name} 
               onChangeText={setName} 
             />
           </View>
 
-          <Text style={styles.inputLabel}>Field Size (Hectares)</Text>
+          <Text style={styles.inputLabel}>{t('map.field_size')}</Text>
           <View style={styles.inputWrapper}>
             <MaterialCommunityIcons name="arrow-expand" size={18} color="#0F766E" style={{ marginRight: 10 }} />
             <TextInput 
@@ -141,10 +145,10 @@ export default function MapScreen({ navigation }) {
             <Text style={styles.inputUnit}>HA</Text>
           </View>
 
-          <Text style={styles.inputLabel}>Target Crop Type</Text>
+          <Text style={styles.inputLabel}>{t('map.target_crop')}</Text>
           <TouchableOpacity style={styles.selectorBtn} onPress={() => setCropModal(true)}>
             <MaterialCommunityIcons name="leaf" size={18} color="#0F766E" style={{ marginRight: 10 }} />
-            <Text style={styles.selectorText}>{cropType}</Text>
+            <Text style={styles.selectorText}>{CROPS.find(c => c.value === cropType)?.label || cropType}</Text>
             <Feather name="chevron-down" size={18} color="#94A3B8" style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
         </View>
@@ -153,15 +157,15 @@ export default function MapScreen({ navigation }) {
         <View style={styles.gpsCard}>
           <View style={styles.gpsHeader}>
             <MaterialCommunityIcons name="crosshairs-gps" size={20} color="#0369A1" style={{ marginRight: 6 }} />
-            <Text style={styles.gpsTitle}>GPS GEOLOCATION</Text>
+            <Text style={styles.gpsTitle}>{t('map.gps')}</Text>
           </View>
-          <Text style={styles.gpsSub}>Field center coordinates detected from your phone location:</Text>
+          <Text style={styles.gpsSub}>{t('map.gps_sub')}</Text>
           <Text style={styles.gpsCoordinates}>
-            {gpsLoading ? 'Acquiring GPS Signal...' : `${coordinates[1].toFixed(5)}° N, ${coordinates[0].toFixed(5)}° E`}
+            {gpsLoading ? t('map.acquiring') : `${coordinates[1].toFixed(5)}° N, ${coordinates[0].toFixed(5)}° E`}
           </Text>
           <TouchableOpacity style={styles.gpsRefreshBtn} onPress={fetchCurrentLocation} disabled={gpsLoading}>
             <Feather name="refresh-cw" size={14} color="#0369A1" style={{ marginRight: 6 }} />
-            <Text style={styles.gpsRefreshText}>Update GPS Location</Text>
+            <Text style={styles.gpsRefreshText}>{t('map.update_gps')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -171,7 +175,7 @@ export default function MapScreen({ navigation }) {
           ) : (
             <>
               <Feather name="check-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
-              <Text style={styles.saveBtnText}>Register Field</Text>
+              <Text style={styles.saveBtnText}>{t('map.register')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -181,7 +185,7 @@ export default function MapScreen({ navigation }) {
       <Modal visible={cropModal} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Target Crop</Text>
+            <Text style={styles.modalTitle}>{t('map.select_crop')}</Text>
             <ScrollView style={{ maxHeight: 300 }}>
               {CROPS.map((crop) => (
                 <TouchableOpacity 
@@ -199,7 +203,7 @@ export default function MapScreen({ navigation }) {
               ))}
             </ScrollView>
             <TouchableOpacity style={styles.closeBtn} onPress={() => setCropModal(false)}>
-              <Text style={styles.closeBtnText}>Cancel</Text>
+              <Text style={styles.closeBtnText}>{t('map.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -218,8 +222,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 55,
-    paddingBottom: 18,
+    paddingTop: 45,
+    paddingBottom: 10,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
@@ -254,8 +258,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 40,
+    paddingTop: 15,
+    paddingBottom: 25,
   },
   pageTitle: {
     fontSize: 28,
@@ -268,7 +272,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
     lineHeight: 20,
-    marginBottom: 25,
+    marginBottom: 15,
   },
   card: {
     backgroundColor: '#FFF',
@@ -281,7 +285,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.02,
     shadowRadius: 10,
     elevation: 3,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   inputLabel: {
     fontSize: 12,
@@ -334,7 +338,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: '#E0F2FE',
-    marginBottom: 25,
+    marginBottom: 15,
   },
   gpsHeader: {
     flexDirection: 'row',

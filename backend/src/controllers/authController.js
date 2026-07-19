@@ -108,20 +108,22 @@ const getMe = async (req, res) => {
 // @desc    Update user profile data
 // @route   PUT /api/auth/update
 // @access  Private
-const updateMe = async (req, res) => {
-  try {
-    const { name, phone, email } = req.body;
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ status: 'error', message: 'User not found' });
-    }
-
-    if (name) user.name = name;
-    if (phone !== undefined) user.phone = phone;
-    if (email !== undefined) user.email = email;
-
-    await user.save();
+  const updateMe = async (req, res) => {
+    try {
+      const { name, phone, email, pushEnabled, emailEnabled } = req.body;
+  
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ status: 'error', message: 'User not found' });
+      }
+  
+      if (name) user.name = name;
+      if (phone !== undefined) user.phone = phone;
+      if (email !== undefined) user.email = email;
+      if (pushEnabled !== undefined) user.pushEnabled = pushEnabled;
+      if (emailEnabled !== undefined) user.emailEnabled = emailEnabled;
+  
+      await user.save();
 
     res.status(200).json({
       status: 'success',
@@ -129,9 +131,38 @@ const updateMe = async (req, res) => {
         _id: user.id,
         name: user.name,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        pushEnabled: user.pushEnabled,
+        emailEnabled: user.emailEnabled
       }
     });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+// @desc    Update user password
+// @route   PUT /api/auth/password
+// @access  Private
+const updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    // Check if current password is correct
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ status: 'error', message: 'Incorrect current password' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ status: 'success', message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -141,5 +172,6 @@ module.exports = {
   registerUser,
   loginUser,
   getMe,
-  updateMe
+  updateMe,
+  updatePassword
 };

@@ -5,9 +5,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 import { API_URL } from '../config';
 
 export default function DashboardScreen({ navigation }) {
+  const { t } = useTranslation();
   const [weatherData, setWeatherData] = useState(null);
   const [farms, setFarms] = useState([]);
   const [predictions, setPredictions] = useState([]);
@@ -39,7 +41,22 @@ export default function DashboardScreen({ navigation }) {
     try {
       const token = await AsyncStorage.getItem('token');
       
-      // Fetch Farms first to get location
+      // Step 1: Load from Cache First (Offline Mode)
+      try {
+        const cachedDataStr = await AsyncStorage.getItem('dashboard_cache');
+        if (cachedDataStr) {
+          const cached = JSON.parse(cachedDataStr);
+          if (cached.farms) setFarms(cached.farms);
+          if (cached.weatherData) setWeatherData(cached.weatherData);
+          if (cached.predictions) setPredictions(cached.predictions);
+          if (cached.frontendCity) setFrontendCity(cached.frontendCity);
+          setLoading(false); // Stop loading spinner immediately
+        }
+      } catch (cacheErr) {
+        console.log('Cache read error:', cacheErr);
+      }
+      
+      // Step 2: Fetch Farms silently in background
       const farmRes = await axios.get(`${API_URL}/api/farms`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -49,6 +66,7 @@ export default function DashboardScreen({ navigation }) {
       // Default coords (New Delhi)
       let lat = 28.7041;
       let lon = 77.1025;
+      let currentCity = frontendCity;
 
       try {
         // Request GPS Permissions
@@ -63,11 +81,11 @@ export default function DashboardScreen({ navigation }) {
           if (address && address.length > 0) {
             const city = address[0].city || address[0].region || address[0].district;
             if (city) {
+              currentCity = city;
               setFrontendCity(city);
             }
           }
         } else if (farmList.length > 0 && farmList[0].location?.coordinates) {
-          // Fallback to first farm
           const coords = farmList[0].location.coordinates;
           lon = coords[0];
           lat = coords[1];
@@ -93,8 +111,17 @@ export default function DashboardScreen({ navigation }) {
       });
       setPredictions(predRes.data.data);
 
+      // Step 3: Update Cache on successful network fetch
+      await AsyncStorage.setItem('dashboard_cache', JSON.stringify({
+        farms: farmList,
+        weatherData: weatherRes.data.data,
+        predictions: predRes.data.data,
+        frontendCity: currentCity
+      }));
+
     } catch (error) {
       console.log('Dashboard fetch error:', error);
+      // If network fails, cached data remains on screen. We don't wipe it!
     } finally {
       setLoading(false);
     }
@@ -152,9 +179,9 @@ export default function DashboardScreen({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 25, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <Text style={styles.welcomeSubtitle}>WELCOME BACK</Text>
-        <Text style={styles.welcomeTitle}>Smart Farm Hub</Text>
-        <Text style={styles.welcomeDesc}>Monitor fields, retrieve weather, and evaluate predictions in real-time.</Text>
+        <Text style={styles.welcomeSubtitle}>{t('dashboard.welcome_back')}</Text>
+        <Text style={styles.welcomeTitle}>{t('dashboard.smart_farm_hub')}</Text>
+        <Text style={styles.welcomeDesc}>{t('dashboard.description')}</Text>
 
         {/* Live Weather Card */}
         <View style={styles.weatherCard}>
@@ -182,19 +209,19 @@ export default function DashboardScreen({ navigation }) {
                     size={46} 
                     color="#FBBF24" 
                   />
-                  <Text style={styles.weatherStatusText}>Optimal Harvest Period</Text>
+                  <Text style={styles.weatherStatusText}>{t('dashboard.optimal_harvest')}</Text>
                 </View>
               </View>
               
               <View style={styles.weatherBottomRow}>
                 <View style={styles.weatherSubMetric}>
                   <Feather name="droplet" size={14} color="#A7F3D0" style={{ marginRight: 4 }} />
-                  <Text style={styles.weatherSubText}>Humidity: {weatherData.humidity}%</Text>
+                  <Text style={styles.weatherSubText}>{t('dashboard.humidity')}: {weatherData.humidity}%</Text>
                 </View>
                 <View style={styles.weatherSubSeparator} />
                 <View style={styles.weatherSubMetric}>
                   <Feather name="cloud-rain" size={14} color="#A7F3D0" style={{ marginRight: 4 }} />
-                  <Text style={styles.weatherSubText}>Rain: {weatherData.rainfall || 0}mm</Text>
+                  <Text style={styles.weatherSubText}>{t('dashboard.rain')}: {weatherData.rainfall || 0}mm</Text>
                 </View>
               </View>
             </View>
@@ -207,29 +234,29 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.overviewStatsRow}>
           <View style={styles.statBox}>
             <Text style={styles.statNumber}>{farms.length}</Text>
-            <Text style={styles.statLabel}>Active Fields</Text>
+            <Text style={styles.statLabel}>{t('dashboard.active_fields')}</Text>
           </View>
           <View style={styles.statSeparator} />
           <View style={styles.statBox}>
             <Text style={styles.statNumber}>{predictions.length}</Text>
-            <Text style={styles.statLabel}>AI Models Run</Text>
+            <Text style={styles.statLabel}>{t('dashboard.ai_models_run')}</Text>
           </View>
         </View>
 
         {/* Active Fields Card */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Active Fields</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.active_fields')}</Text>
           <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('Map')}>
             <Feather name="plus" size={16} color="#0F766E" style={{ marginRight: 4 }} />
-            <Text style={styles.addButtonText}>Add Field</Text>
+            <Text style={styles.addButtonText}>{t('dashboard.add_field')}</Text>
           </TouchableOpacity>
         </View>
 
         {farms.length === 0 ? (
           <View style={styles.emptyFieldsCard}>
             <Feather name="map" size={30} color="#9CA3AF" style={{ marginBottom: 8 }} />
-            <Text style={styles.emptyCardText}>No fields registered yet</Text>
-            <Text style={styles.emptyCardSub}>Draw field boundaries on the map to start tracking.</Text>
+            <Text style={styles.emptyCardText}>{t('dashboard.no_fields_yet')}</Text>
+            <Text style={styles.emptyCardSub}>{t('dashboard.enter_field_area')}</Text>
           </View>
         ) : (
           farms.map((farm) => (
@@ -261,14 +288,14 @@ export default function DashboardScreen({ navigation }) {
 
         {/* Recent Predictions */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Recent AI Yield Predictions</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.recent_predictions')}</Text>
         </View>
 
         {predictions.length === 0 ? (
           <View style={styles.emptyFieldsCard}>
             <Feather name="trending-up" size={30} color="#9CA3AF" style={{ marginBottom: 8 }} />
-            <Text style={styles.emptyCardText}>No predictions recorded</Text>
-            <Text style={styles.emptyCardSub}>Configure fields and run AI predictions to see results.</Text>
+            <Text style={styles.emptyCardText}>{t('dashboard.no_predictions')}</Text>
+            <Text style={styles.emptyCardSub}>{t('dashboard.configure_fields')}</Text>
           </View>
         ) : (
           predictions.slice(0, 3).map((pred) => (
@@ -354,8 +381,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 55,
-    paddingBottom: 18,
+    paddingTop: 50,
+    paddingBottom: 12,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9', // Muted clean separator
@@ -429,8 +456,8 @@ const styles = StyleSheet.create({
   weatherCard: {
     backgroundColor: '#064E3B',
     borderRadius: 24,
-    padding: 24,
-    marginBottom: 24,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#064E3B',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
@@ -511,9 +538,9 @@ const styles = StyleSheet.create({
   overviewStatsRow: {
     flexDirection: 'row',
     backgroundColor: '#FFF',
-    borderRadius: 24,
-    paddingVertical: 20,
-    marginBottom: 25,
+    borderRadius: 20,
+    paddingVertical: 16,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#F1F5F9',
     shadowColor: '#0F172A',
@@ -550,8 +577,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 10,
+    marginBottom: 10,
+    marginTop: 5,
   },
   sectionTitle: {
     fontSize: 19,
@@ -581,10 +608,10 @@ const styles = StyleSheet.create({
   },
   emptyFieldsCard: {
     backgroundColor: '#FFF',
-    borderRadius: 24,
-    padding: 28,
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#F1F5F9',
     shadowColor: '#000',

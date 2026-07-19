@@ -1,55 +1,63 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Modal, FlatList, Animated } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Modal, FlatList, Animated, Dimensions } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 import { API_URL } from '../config';
 
-const CROPS = [
-  { label: 'Rice 🌾', value: '41' },
-  { label: 'Wheat 🌾', value: '54' },
-  { label: 'Maize 🌽', value: '24' },
-  { label: 'Sugarcane 🎋', value: '47' },
-  { label: 'Cotton ☁️', value: '11' },
-  { label: 'Potato 🥔', value: '38' },
-  { label: 'Onion 🧅', value: '31' },
-  { label: 'Banana 🍌', value: '3' },
-  { label: 'Barley 🌾', value: '4' }
+const CROPS_KEYS = [
+  { key: 'crops.rice', value: '41' },
+  { key: 'crops.wheat', value: '54' },
+  { key: 'crops.maize', value: '24' },
+  { key: 'crops.sugarcane', value: '47' },
+  { key: 'crops.cotton', value: '11' },
+  { key: 'crops.potato', value: '38' },
+  { key: 'crops.onion', value: '31' },
+  { key: 'crops.banana', value: '3' },
+  { key: 'crops.barley', value: '4' }
 ];
 
-const SEASONS = [
-  { label: 'Kharif (Monsoon) 🌧️', value: '1' },
-  { label: 'Rabi (Winter) ❄️', value: '2' },
-  { label: 'Summer ☀️', value: '3' },
-  { label: 'Whole Year 📅', value: '4' },
-  { label: 'Winter 🌨️', value: '5' },
-  { label: 'Autumn 🍂', value: '0' }
+const SEASONS_KEYS = [
+  { key: 'seasons.kharif', value: '1' },
+  { key: 'seasons.rabi', value: '2' },
+  { key: 'seasons.summer', value: '3' },
+  { key: 'seasons.whole_year', value: '4' },
+  { key: 'seasons.winter', value: '5' },
+  { key: 'seasons.autumn', value: '0' }
 ];
 
-const STATES = [
-  { label: 'Uttar Pradesh 🏛️', value: '27' },
-  { label: 'Maharashtra 🏗️', value: '15' },
-  { label: 'Madhya Pradesh 🗺️', value: '14' },
-  { label: 'Punjab 🌾', value: '22' },
-  { label: 'Haryana 🚜', value: '8' },
-  { label: 'Delhi 🗼', value: '5' },
-  { label: 'West Bengal 🏝️', value: '29' },
-  { label: 'Gujarat 🏬', value: '7' },
-  { label: 'Karnataka 🏛️', value: '12' },
-  { label: 'Tamil Nadu 🛕', value: '24' }
+const STATES_KEYS = [
+  { key: 'states.up', value: '27' },
+  { key: 'states.mh', value: '15' },
+  { key: 'states.mp', value: '14' },
+  { key: 'states.pb', value: '22' },
+  { key: 'states.hr', value: '8' },
+  { key: 'states.dl', value: '5' },
+  { key: 'states.wb', value: '29' },
+  { key: 'states.gj', value: '7' },
+  { key: 'states.ka', value: '12' },
+  { key: 'states.tn', value: '24' }
 ];
 
-const SOIL_TYPES = [
-  { label: 'Alluvial Soil 🪵', value: 'alluvial', pH: '6.5' },
-  { label: 'Black Soil 🌑', value: 'black', pH: '7.8' },
-  { label: 'Red Soil 🧱', value: 'red', pH: '5.5' },
-  { label: 'Laterite Soil 🧱', value: 'laterite', pH: '5.0' },
-  { label: 'Sandy/Desert Soil 🏜️', value: 'sandy', pH: '7.0' },
-  { label: 'Clayey/Loamy Soil 🥣', value: 'clayey_loamy', pH: '6.0' }
+const SOIL_TYPES_KEYS = [
+  { key: 'soils.alluvial', value: 'alluvial', pH: '6.5' },
+  { key: 'soils.black', value: 'black', pH: '7.8' },
+  { key: 'soils.red', value: 'red', pH: '5.5' },
+  { key: 'soils.laterite', value: 'laterite', pH: '5.0' },
+  { key: 'soils.sandy', value: 'sandy', pH: '7.0' },
+  { key: 'soils.clayey_loamy', value: 'clayey_loamy', pH: '6.0' }
 ];
 
 export default function FarmDataFormScreen({ route, navigation }) {
+  const { t } = useTranslation();
+  
+  const CROPS = CROPS_KEYS.map(c => ({ label: t(c.key), value: c.value, key: c.key }));
+  const SEASONS = SEASONS_KEYS.map(s => ({ label: t(s.key), value: s.value, key: s.key }));
+  const STATES = STATES_KEYS.map(s => ({ label: t(s.key), value: s.value, key: s.key }));
+  const SOIL_TYPES = SOIL_TYPES_KEYS.map(s => ({ label: t(s.key), value: s.value, pH: s.pH, key: s.key }));
+
   const passedArea = route.params?.area || '';
   const farmId = route.params?.farmId || null;
 
@@ -72,6 +80,10 @@ export default function FarmDataFormScreen({ route, navigation }) {
   const [prediction, setPrediction] = useState(null);
   const [resultModalVisible, setResultModalVisible] = useState(false);
   const [npkExpanded, setNpkExpanded] = useState(false);
+  
+  const [activeTab, setActiveTab] = useState(1);
+  const scrollViewRef = useRef(null);
+  const { width } = Dimensions.get('window');
 
   // Market Prices & Recommendations State
   const [marketPrices, setMarketPrices] = useState([]);
@@ -358,7 +370,13 @@ export default function FarmDataFormScreen({ route, navigation }) {
       });
       
       setPrediction(response.data.data.predicted_yield_per_area);
+      setActiveTab(1);
       setResultModalVisible(true);
+      setTimeout(() => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ x: width, y: 0, animated: false });
+        }
+      }, 100);
       runPopUpAnimation();
     } catch (error) {
       Alert.alert('Prediction Failed', error.response?.data?.message || 'Check your network connection.');
@@ -462,11 +480,11 @@ export default function FarmDataFormScreen({ route, navigation }) {
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.sectionHeader}>Configure Yield Model</Text>
-          <Text style={styles.sectionSub}>Input local parameters or choose a registered field to auto-fill metrics.</Text>
+          <Text style={styles.sectionHeader}>{t('form.configure_model')}</Text>
+          <Text style={styles.sectionSub}>{t('form.model_subtitle')}</Text>
 
           {/* Active Farm Field Selector */}
-          <Text style={styles.groupLabel}>TARGET FIELD</Text>
+          <Text style={styles.groupLabel}>{t('form.select_farm')}</Text>
           <View style={styles.selectCard}>
             <TouchableOpacity style={styles.selectRow} onPress={() => setFarmModal(true)}>
               <View style={styles.selectTextGroup}>
@@ -484,12 +502,12 @@ export default function FarmDataFormScreen({ route, navigation }) {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Feather name="cloud-drizzle" size={18} color="#115E59" />
-              <Text style={styles.cardTitle}>ENVIRONMENTAL FACTORS</Text>
+              <Text style={styles.cardTitle}>{t('form.environmental_factors')}</Text>
             </View>
             
             <View style={styles.grid}>
               <View style={styles.gridItem}>
-                <Text style={styles.itemLabel}>TEMPERATURE</Text>
+                <Text style={styles.itemLabel}>{t('form.temp')}</Text>
                 <View style={[styles.inputWrapper, styles.readOnlyWrapper]}>
                   <Text style={styles.readOnlyText}>{form.temperature}</Text>
                   <Text style={styles.inputUnit}>°C</Text>
@@ -497,7 +515,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
               </View>
 
               <View style={styles.gridItem}>
-                <Text style={styles.itemLabel}>RAINFALL</Text>
+                <Text style={styles.itemLabel}>{t('form.rain')}</Text>
                 <View style={[styles.inputWrapper, styles.readOnlyWrapper]}>
                   <Text style={styles.readOnlyText}>{form.rainfall}</Text>
                   <Text style={styles.inputUnit}>mm</Text>
@@ -505,7 +523,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
               </View>
 
               <View style={styles.gridItem}>
-                <Text style={styles.itemLabel}>HUMIDITY</Text>
+                <Text style={styles.itemLabel}>{t('form.humidity')}</Text>
                 <View style={[styles.inputWrapper, styles.readOnlyWrapper]}>
                   <Text style={styles.readOnlyText}>{form.humidity}</Text>
                   <Text style={styles.inputUnit}>%</Text>
@@ -526,7 +544,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
           <View style={styles.card}>
             <TouchableOpacity style={styles.cardHeader} onPress={() => setNpkExpanded(!npkExpanded)}>
               <MaterialCommunityIcons name="flask-outline" size={18} color="#115E59" />
-              <Text style={styles.cardTitle}>SOIL NUTRIENTS (NPK)</Text>
+              <Text style={styles.cardTitle}>{t('form.field_metrics')}</Text>
               {isUsingPreset && (
                 <View style={styles.presetBadge}>
                   <Text style={styles.presetBadgeText}>Autofilled</Text>
@@ -538,7 +556,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
             {npkExpanded && (
               <View style={styles.grid}>
                 <View style={styles.gridItem}>
-                  <Text style={styles.itemLabel}>NITROGEN (N)</Text>
+                  <Text style={styles.itemLabel}>{t('form.nitrogen')}</Text>
                   <View style={styles.inputWrapper}>
                     <TextInput style={styles.input} value={form.N} onChangeText={(v)=>updateForm('N',v)} keyboardType="numeric" />
                     <Text style={styles.inputUnit}>kg/h</Text>
@@ -546,7 +564,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
                 </View>
 
                 <View style={styles.gridItem}>
-                  <Text style={styles.itemLabel}>PHOSPHORUS (P)</Text>
+                  <Text style={styles.itemLabel}>{t('form.phosphorus')}</Text>
                   <View style={styles.inputWrapper}>
                     <TextInput style={styles.input} value={form.P} onChangeText={(v)=>updateForm('P',v)} keyboardType="numeric" />
                     <Text style={styles.inputUnit}>kg/h</Text>
@@ -554,7 +572,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
                 </View>
 
                 <View style={styles.gridItem}>
-                  <Text style={styles.itemLabel}>POTASSIUM (K)</Text>
+                  <Text style={styles.itemLabel}>{t('form.potassium')}</Text>
                   <View style={styles.inputWrapper}>
                     <TextInput style={styles.input} value={form.K} onChangeText={(v)=>updateForm('K',v)} keyboardType="numeric" />
                     <Text style={styles.inputUnit}>kg/h</Text>
@@ -570,7 +588,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
           <View style={styles.selectCard}>
             <TouchableOpacity style={styles.selectRow} onPress={() => setCropModal(true)}>
               <View style={styles.selectTextGroup}>
-                <Text style={styles.selectLabel}>CROP TYPE</Text>
+                <Text style={styles.selectLabel}>{t('form.crop_type')}</Text>
                 <Text style={styles.selectValue}>{selectedCropName}</Text>
               </View>
               <Feather name="chevron-right" size={20} color="#115E59" />
@@ -580,7 +598,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
 
             <TouchableOpacity style={styles.selectRow} onPress={() => setSoilModal(true)}>
               <View style={styles.selectTextGroup}>
-                <Text style={styles.selectLabel}>SOIL TYPE</Text>
+                <Text style={styles.selectLabel}>{t('form.soil_type')}</Text>
                 <Text style={styles.selectValue}>{selectedSoilName}</Text>
               </View>
               <Feather name="chevron-right" size={20} color="#115E59" />
@@ -590,7 +608,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
 
             <TouchableOpacity style={styles.selectRow} onPress={() => setSeasonModal(true)}>
               <View style={styles.selectTextGroup}>
-                <Text style={styles.selectLabel}>SEASON</Text>
+                <Text style={styles.selectLabel}>{t('form.season')}</Text>
                 <Text style={styles.selectValue}>{selectedSeasonName}</Text>
               </View>
               <Feather name="chevron-right" size={20} color="#115E59" />
@@ -600,7 +618,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
 
             <TouchableOpacity style={styles.selectRow} onPress={() => setStateModal(true)}>
               <View style={styles.selectTextGroup}>
-                <Text style={styles.selectLabel}>STATE / TERRITORY</Text>
+                <Text style={styles.selectLabel}>{t('form.state')}</Text>
                 <Text style={styles.selectValue}>{selectedStateName}</Text>
               </View>
               <Feather name="chevron-right" size={20} color="#115E59" />
@@ -608,235 +626,269 @@ export default function FarmDataFormScreen({ route, navigation }) {
           </View>
 
           {/* Standalone Farm Size Input */}
-          <Text style={styles.groupLabel}>FIELD METRICS</Text>
-          <View style={styles.sizeCard}>
-            <Text style={styles.itemLabel}>FARM SIZE (HECTARES)</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialCommunityIcons name="arrow-expand" size={18} color="#115E59" style={{ marginRight: 8 }} />
-              <TextInput style={styles.input} value={form.area} onChangeText={(v)=>updateForm('area',v)} keyboardType="numeric" placeholder="e.g. 2.5" />
-              <Text style={styles.inputUnit}>HA</Text>
-            </View>
+          <Text style={styles.groupLabel}>{t('form.farm_size')}</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: '#FFF', marginBottom: 24, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 16 }]}>
+            <MaterialCommunityIcons name="arrow-expand" size={18} color="#115E59" style={{ marginRight: 8 }} />
+            <TextInput style={styles.input} value={form.area} onChangeText={(v)=>updateForm('area',v)} keyboardType="numeric" placeholder="e.g. 2.5" />
+            <Text style={styles.inputUnit}>HA</Text>
           </View>
         </View>
 
-        {/* Full-Screen Prediction Report Modal */}
+        {/* Swipeable Full-Screen Prediction Report Modal */}
         <Modal visible={resultModalVisible} transparent={false} animationType="slide">
           <View style={styles.fullScreenOverlay}>
-            <ScrollView contentContainerStyle={styles.fullScreenContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.reportBadge}>
-                <MaterialCommunityIcons name="brain" size={24} color="#FFF" />
-                <Text style={styles.reportBadgeText}>AI ANALYSIS REPORT</Text>
-              </View>
-
-              <Text style={styles.reportTitle}>Harvest Yield Forecast</Text>
-              <Text style={styles.reportSubtitle}>Precision agricultural forecast generated by the XGBoost regression model.</Text>
-
-              {/* Scale-animated Yield Value Display Card */}
-              <Animated.View style={[styles.reportYieldCard, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
-                <Text style={styles.yieldCardLabel}>ESTIMATED HARVEST YIELD</Text>
-                <View style={styles.yieldCardValueRow}>
-                  <Text style={styles.yieldCardLargeText}>{prediction ? prediction.toFixed(2) : '0.00'}</Text>
-                  <Text style={styles.yieldCardUnit}> Tons/HA</Text>
-                </View>
-              </Animated.View>
-
-              {/* Revenue Optimization Card */}
-              {marketPrices.length > 0 && (
-                <View style={styles.revenueCard}>
-                  <View style={styles.revenueHeader}>
-                    <MaterialCommunityIcons name="currency-inr" size={22} color="#064E3B" style={{marginRight: 6}} />
-                    <Text style={styles.revenueTitle}>REVENUE OPTIMIZER</Text>
-                  </View>
-                  <Text style={styles.revenueSub}>Estimated gross revenue based on current commodity rates:</Text>
-                  <Text style={styles.revenueAmount}>
-                    ₹{((prediction || 0) * (parseFloat(form.area) || 1.0) * 10 * (marketPrices.find(p => p.cropId === form.crop)?.pricePerQuintal || 0)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                  </Text>
-                  <View style={styles.revenueDetailRow}>
-                    <Text style={styles.revenueDetailText}>Price Index: ₹{marketPrices.find(p => p.cropId === form.crop)?.pricePerQuintal || 0}/Quintal</Text>
-                    <Text style={styles.revenueDetailText}>Total Production: {((prediction || 0) * (parseFloat(form.area) || 1.0)).toFixed(2)} Tons</Text>
-                  </View>
-                </View>
-              )}
-              {/* Fertilizer Recommendation Card */}
-              <View style={styles.fertilizerCard}>
-                <View style={styles.fertilizerHeader}>
-                  <MaterialCommunityIcons name="flask-outline" size={22} color="#075E54" style={{marginRight: 6}} />
-                  <Text style={styles.fertilizerTitle}>SOIL NUTRIENT OPTIMIZER</Text>
-                </View>
-                
-                {fertRecommendation.hasDeficit ? (
-                  <>
-                    <Text style={styles.fertilizerSub}>
-                      Target NPK requirements for this crop are not fully satisfied. Add the following commercial bags to maximize yield:
-                    </Text>
-                    
-                    <View style={styles.fertilizerList}>
-                      {fertRecommendation.urea > 0 && (
-                        <View style={styles.fertilizerItem}>
-                          <View style={styles.fertBulletBg}>
-                            <Text style={styles.fertBulletText}>N</Text>
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.fertItemName}>Urea (46% Nitrogen)</Text>
-                            <Text style={styles.fertItemSub}>Spread to satisfy crop vegetative growth needs</Text>
-                          </View>
-                          <Text style={styles.fertItemBags}>{fertRecommendation.urea} Bags</Text>
-                        </View>
-                      )}
-
-                      {fertRecommendation.dap > 0 && (
-                        <View style={styles.fertilizerItem}>
-                          <View style={styles.fertBulletBg}>
-                            <Text style={styles.fertBulletText}>P</Text>
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.fertItemName}>DAP (Diammonium Phosphate)</Text>
-                            <Text style={styles.fertItemSub}>Aids root development and crop strength</Text>
-                          </View>
-                          <Text style={styles.fertItemBags}>{fertRecommendation.dap} Bags</Text>
-                        </View>
-                      )}
-
-                      {fertRecommendation.mop > 0 && (
-                        <View style={styles.fertilizerItem}>
-                          <View style={styles.fertBulletBg}>
-                            <Text style={styles.fertBulletText}>K</Text>
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.fertItemName}>MOP (Muriate of Potash)</Text>
-                            <Text style={styles.fertItemSub}>Boosts pest resistance and water absorption</Text>
-                          </View>
-                          <Text style={styles.fertItemBags}>{fertRecommendation.mop} Bags</Text>
-                        </View>
-                      )}
-                    </View>
-                  </>
-                ) : (
-                  <View style={styles.optimizedSoilRow}>
-                    <Feather name="check-circle" size={18} color="#065F46" style={{marginRight: 6}} />
-                    <Text style={styles.optimizedSoilText}>
-                      Your NPK values are fully optimized for this crop! No deficits detected.
+            
+            {/* Top Indicator / Tabs */}
+            <View style={styles.tabIndicatorContainer}>
+              
+              {/* Dynamic Swipe Hints Above Dots */}
+              <View style={[styles.swipeHintsContainer, { marginTop: 0, marginBottom: 15, paddingHorizontal: 15, width: '100%' }]}>
+                {activeTab > 0 ? (
+                  <View style={styles.swipeHintBox}>
+                    <Feather name="chevrons-left" size={18} color="#064E3B" />
+                    <Text style={styles.swipeHintBoxText}>
+                      {activeTab === 1 ? "Soil Nutrients" : "Yield & Revenue"}
                     </Text>
                   </View>
-                )}
-              </View>
-
-
-              {/* Compare & Recommend Button */}
-              <TouchableOpacity 
-                style={styles.optimizeBtn} 
-                onPress={() => {
-                  setResultModalVisible(false);
-                  handleCompareCrops();
-                }}
-                disabled={comparing}
-              >
-                {comparing ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <>
-                    <Feather name="trending-up" size={18} color="#FFF" style={{marginRight: 8}} />
-                    <Text style={styles.optimizeBtnText}>Compare Crops & Optimize Profit</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Parameter Summary Card */}
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryCardTitle}>FORECAST CONSTANTS & METRICS</Text>
+                ) : <View style={{width: 10}} />}
                 
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Crop Type</Text>
-                  <Text style={styles.summaryValue}>{selectedCropName}</Text>
-                </View>
-                <View style={styles.summarySeparator} />
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Soil Type</Text>
-                  <Text style={styles.summaryValue}>{selectedSoilName}</Text>
-                </View>
-                <View style={styles.summarySeparator} />
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Season</Text>
-                  <Text style={styles.summaryValue}>{selectedSeasonName}</Text>
-                </View>
-                <View style={styles.summarySeparator} />
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Region/State</Text>
-                  <Text style={styles.summaryValue}>{selectedStateName}</Text>
-                </View>
-                <View style={styles.summarySeparator} />
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Temperature</Text>
-                  <Text style={styles.summaryValue}>{form.temperature}°C</Text>
-                </View>
-                <View style={styles.summarySeparator} />
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Rainfall</Text>
-                  <Text style={styles.summaryValue}>{form.rainfall} mm</Text>
-                </View>
-                <View style={styles.summarySeparator} />
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Soil pH</Text>
-                  <Text style={styles.summaryValue}>{form.pH} pH</Text>
-                </View>
+                {activeTab < 2 ? (
+                  <View style={styles.swipeHintBox}>
+                    <Text style={styles.swipeHintBoxText}>
+                      {activeTab === 1 ? "Compare Crops" : "Yield & Revenue"}
+                    </Text>
+                    <Feather name="chevrons-right" size={18} color="#064E3B" />
+                  </View>
+                ) : <View style={{width: 10}} />}
               </View>
 
-              <TouchableOpacity style={styles.closeReportButton} onPress={() => setResultModalVisible(false)}>
-                <Text style={styles.closeReportText}>Dismiss Report</Text>
-              </TouchableOpacity>
-
-            </ScrollView>
-          </View>
-        </Modal>
-
-        {/* Crop Comparison & Recommendation Modal */}
-        <Modal visible={comparisonModalVisible} transparent={false} animationType="slide">
-          <View style={styles.fullScreenOverlay}>
-            <View style={styles.comparisonHeader}>
-              <View style={styles.reportBadgeGreen}>
-                <Feather name="award" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                <Text style={styles.reportBadgeText}>PROFIT OPTIMIZATION ENGINE</Text>
+              <View style={styles.tabIndicators}>
+                <View style={[styles.tabDot, activeTab === 0 && styles.tabDotActive]} />
+                <View style={[styles.tabDot, activeTab === 1 && styles.tabDotActive]} />
+                <View style={[styles.tabDot, activeTab === 2 && styles.tabDotActive]} />
               </View>
-              <Text style={styles.reportTitle}>Profitability Rankings</Text>
-              <Text style={styles.reportSubtitle}>Ranked evaluation of 9 crops calculated dynamically under your current weather, soil, and field area constants.</Text>
+              <Text style={styles.tabIndicatorText}>
+                {activeTab === 0 ? "Soil Nutrient Optimizer" : activeTab === 1 ? "Yield & Revenue" : "Compare Crops"}
+              </Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.comparisonScroll} showsVerticalScrollIndicator={false}>
-              {comparisonResults.map((res, index) => {
-                const isBest = index === 0;
-                return (
-                  <View key={res.cropId} style={[styles.comparisonCard, isBest && styles.bestComparisonCard]}>
-                    {isBest && (
-                      <View style={styles.bestBadge}>
-                        <Text style={styles.bestBadgeText}>⭐ HIGHEST PROFIT RECOMMENDATION</Text>
+            <ScrollView 
+              ref={scrollViewRef}
+              horizontal 
+              pagingEnabled 
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => {
+                const index = Math.round(e.nativeEvent.contentOffset.x / width);
+                setActiveTab(index);
+              }}
+              contentOffset={{ x: width, y: 0 }}
+            >
+              
+              {/* PAGE 0: SWIPE LEFT - Soil Nutrient Optimizer */}
+              <View style={{ width, padding: 20 }}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View style={styles.fertilizerCard}>
+                    <View style={styles.fertilizerHeader}>
+                      <MaterialCommunityIcons name="flask-outline" size={22} color="#075E54" style={{marginRight: 6}} />
+                      <Text style={styles.fertilizerTitle}>SOIL NUTRIENT OPTIMIZER</Text>
+                    </View>
+                    
+                    {fertRecommendation.hasDeficit ? (
+                      <>
+                        <Text style={styles.fertilizerSub}>
+                          Target NPK requirements for this crop are not fully satisfied. Add the following commercial bags to maximize yield:
+                        </Text>
+                        
+                        <View style={styles.fertilizerList}>
+                          {fertRecommendation.urea > 0 && (
+                            <View style={styles.fertilizerItem}>
+                              <View style={styles.fertBulletBg}>
+                                <Text style={styles.fertBulletText}>N</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.fertItemName}>Urea (46% Nitrogen)</Text>
+                                <Text style={styles.fertItemSub}>Spread to satisfy crop vegetative growth needs</Text>
+                              </View>
+                              <Text style={styles.fertItemBags}>{fertRecommendation.urea} Bags</Text>
+                            </View>
+                          )}
+
+                          {fertRecommendation.dap > 0 && (
+                            <View style={styles.fertilizerItem}>
+                              <View style={styles.fertBulletBg}>
+                                <Text style={styles.fertBulletText}>P</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.fertItemName}>DAP (Diammonium Phosphate)</Text>
+                                <Text style={styles.fertItemSub}>Aids root development and crop strength</Text>
+                              </View>
+                              <Text style={styles.fertItemBags}>{fertRecommendation.dap} Bags</Text>
+                            </View>
+                          )}
+
+                          {fertRecommendation.mop > 0 && (
+                            <View style={styles.fertilizerItem}>
+                              <View style={styles.fertBulletBg}>
+                                <Text style={styles.fertBulletText}>K</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.fertItemName}>MOP (Muriate of Potash)</Text>
+                                <Text style={styles.fertItemSub}>Boosts pest resistance and water absorption</Text>
+                              </View>
+                              <Text style={styles.fertItemBags}>{fertRecommendation.mop} Bags</Text>
+                            </View>
+                          )}
+                        </View>
+                      </>
+                    ) : (
+                      <View style={styles.optimizedSoilRow}>
+                        <Feather name="check-circle" size={18} color="#065F46" style={{marginRight: 6}} />
+                        <Text style={styles.optimizedSoilText}>
+                          Your NPK values are fully optimized for this crop! No deficits detected.
+                        </Text>
                       </View>
                     )}
-                    <View style={styles.comparisonRowMain}>
-                      <Text style={styles.comparisonCropName}>{res.cropLabel}</Text>
-                      <Text style={[styles.comparisonRevValue, isBest && styles.bestComparisonRevValue]}>
-                        ₹{res.grossRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                      </Text>
+                  </View>
+                  <View style={{height: 100}} />
+                </ScrollView>
+              </View>
+
+              {/* PAGE 1: MAIN PAGE - Yield & Revenue */}
+              <View style={{ width, padding: 20 }}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  
+
+                  <View style={styles.reportBadge}>
+                    <MaterialCommunityIcons name="brain" size={24} color="#FFF" />
+                    <Text style={styles.reportBadgeText}>ANALYSIS REPORT</Text>
+                  </View>
+
+                  <Text style={styles.reportTitle}>Harvest Yield Forecast</Text>
+                  <Text style={styles.reportSubtitle}>Precision agricultural forecast generated by the XGBoost regression model.</Text>
+
+                  {/* Scale-animated Yield Value Display Card */}
+                  <Animated.View style={[styles.reportYieldCard, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
+                    <Text style={styles.yieldCardLabel}>ESTIMATED HARVEST YIELD</Text>
+                    <View style={styles.yieldCardValueRow}>
+                      <Text style={styles.yieldCardLargeText}>{prediction ? prediction.toFixed(2) : '0.00'}</Text>
+                      <Text style={styles.yieldCardUnit}> Tons/HA</Text>
                     </View>
-                    <View style={styles.comparisonDetailsRow}>
-                      <Text style={styles.comparisonDetailText}>Est. Yield: {res.predictedYield.toFixed(2)} Tons/HA</Text>
-                      <Text style={styles.comparisonDetailText}>Market Rate: ₹{res.pricePerQuintal}/Quintal</Text>
+                  </Animated.View>
+
+                  {/* Revenue Optimization Card */}
+                  {marketPrices.length > 0 && (
+                    <View style={styles.revenueCard}>
+                      <View style={styles.revenueHeader}>
+                        <MaterialCommunityIcons name="currency-inr" size={22} color="#064E3B" style={{marginRight: 6}} />
+                        <Text style={styles.revenueTitle}>REVENUE OPTIMIZER</Text>
+                      </View>
+                      <Text style={styles.revenueSub}>Estimated gross revenue based on current commodity rates:</Text>
+                      <Text style={styles.revenueAmount}>
+                        ₹{((prediction || 0) * (parseFloat(form.area) || 1.0) * 10 * (marketPrices.find(p => p.cropId === form.crop)?.pricePerQuintal || 0)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </Text>
+                      <View style={styles.revenueDetailRow}>
+                        <Text style={styles.revenueDetailText}>Price Index: ₹{marketPrices.find(p => p.cropId === form.crop)?.pricePerQuintal || 0}/Quintal</Text>
+                        <Text style={styles.revenueDetailText}>Total Production: {((prediction || 0) * (parseFloat(form.area) || 1.0)).toFixed(2)} Tons</Text>
+                      </View>
+                    </View>
+                  )}
+                  
+                  {/* Parameter Summary Card */}
+                  <View style={styles.summaryCard}>
+                    <Text style={styles.summaryCardTitle}>FORECAST CONSTANTS & METRICS</Text>
+                    
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Crop Type</Text>
+                      <Text style={styles.summaryValue}>{selectedCropName}</Text>
+                    </View>
+                    <View style={styles.summarySeparator} />
+
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Soil Type</Text>
+                      <Text style={styles.summaryValue}>{selectedSoilName}</Text>
+                    </View>
+                    <View style={styles.summarySeparator} />
+
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Season</Text>
+                      <Text style={styles.summaryValue}>{selectedSeasonName}</Text>
+                    </View>
+                    <View style={styles.summarySeparator} />
+
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Region/State</Text>
+                      <Text style={styles.summaryValue}>{selectedStateName}</Text>
                     </View>
                   </View>
-                );
-              })}
+                  <View style={{height: 100}} />
+                </ScrollView>
+              </View>
+
+              {/* PAGE 2: SWIPE RIGHT - Compare Crops */}
+              <View style={{ width, padding: 20 }}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View style={styles.comparisonHeader}>
+                    <View style={styles.reportBadgeGreen}>
+                      <Feather name="award" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.reportBadgeText}>PROFIT OPTIMIZATION</Text>
+                    </View>
+                    <Text style={styles.reportTitle}>Profitability Rankings</Text>
+                    <Text style={styles.reportSubtitle}>Evaluate alternative crops dynamically under your current weather and soil constants.</Text>
+                  </View>
+
+                  {comparisonResults.length === 0 ? (
+                    <TouchableOpacity 
+                      style={styles.optimizeBtn} 
+                      onPress={handleCompareCrops}
+                      disabled={comparing}
+                    >
+                      {comparing ? (
+                        <ActivityIndicator color="#FFF" />
+                      ) : (
+                        <>
+                          <Feather name="trending-up" size={18} color="#FFF" style={{marginRight: 8}} />
+                          <Text style={styles.optimizeBtnText}>Tap to Compare Crops</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <View>
+                      {comparisonResults.map((res, index) => {
+                        const isBest = index === 0;
+                        return (
+                          <View key={res.cropId} style={[styles.comparisonCard, isBest && styles.bestComparisonCard]}>
+                            {isBest && (
+                              <View style={styles.bestBadge}>
+                                <Text style={styles.bestBadgeText}>⭐ HIGHEST PROFIT</Text>
+                              </View>
+                            )}
+                            <View style={styles.comparisonRowMain}>
+                              <Text style={styles.comparisonCropName}>{res.cropLabel}</Text>
+                              <Text style={[styles.comparisonRevValue, isBest && styles.bestComparisonRevValue]}>
+                                ₹{res.grossRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                              </Text>
+                            </View>
+                            <View style={styles.comparisonDetailsRow}>
+                              <Text style={styles.comparisonDetailText}>Est. Yield: {res.predictedYield.toFixed(2)} Tons/HA</Text>
+                              <Text style={styles.comparisonDetailText}>Rate: ₹{res.pricePerQuintal}/Qtl</Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                  <View style={{height: 100}} />
+                </ScrollView>
+              </View>
+
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity style={styles.closeReportButton} onPress={() => setComparisonModalVisible(false)}>
+              <TouchableOpacity style={styles.closeReportButton} onPress={() => setResultModalVisible(false)}>
                 <Text style={styles.closeReportText}>Return to Form</Text>
               </TouchableOpacity>
             </View>
+
           </View>
         </Modal>
 
@@ -876,7 +928,7 @@ export default function FarmDataFormScreen({ route, navigation }) {
         ) : (
           <>
             <MaterialCommunityIcons name="brain" size={22} color="#FFF" style={{marginRight: 10}} />
-            <Text style={styles.predictBtnText}>Run Prediction Model</Text>
+            <Text style={styles.predictBtnText}>{t('form.run_prediction')}</Text>
           </>
         )}
       </TouchableOpacity>
@@ -913,6 +965,55 @@ function SelectionModal({ visible, data, selectedValue, onValueChange, onClose, 
 }
 
 const styles = StyleSheet.create({
+  tabIndicatorContainer: {
+    paddingTop: 50,
+    paddingBottom: 15,
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tabIndicators: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  tabDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 4,
+  },
+  tabDotActive: {
+    backgroundColor: '#064E3B',
+    width: 20,
+  },
+  tabIndicatorText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#064E3B',
+    letterSpacing: 0.5,
+  },
+  swipeHintsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 5,
+  },
+  swipeHintBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E6F4F1',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  swipeHintBoxText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#064E3B',
+    marginHorizontal: 4,
+  },
   mainWrapper: {
     flex: 1,
     backgroundColor: '#F3F4F6',

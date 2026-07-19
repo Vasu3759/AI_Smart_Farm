@@ -1,12 +1,14 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, ImageBackground, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, ImageBackground, Modal, TextInput, Alert, Switch } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { API_URL } from '../config';
 
 export default function ProfileScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ farms: 0, predictions: 0 });
   const [loading, setLoading] = useState(true);
@@ -17,6 +19,20 @@ export default function ProfileScreen({ navigation }) {
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [updating, setUpdating] = useState(false);
+
+  // New Modals
+  const [securityModalVisible, setSecurityModalVisible] = useState(false);
+  const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
+
+  // Security State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordUpdating, setPasswordUpdating] = useState(false);
+
+  // Notification State
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [emailEnabled, setEmailEnabled] = useState(true);
 
   const handleUpdateProfile = async () => {
     if (!editName.trim()) {
@@ -45,6 +61,48 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  const handleUpdatePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      Alert.alert('Validation Error', 'Please fill all password fields.');
+      return;
+    }
+    setPasswordUpdating(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      await axios.put(`${API_URL}/api/auth/password`, {
+        currentPassword,
+        newPassword
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      Alert.alert('Success', 'Password updated successfully!');
+      setSecurityModalVisible(false);
+      setCurrentPassword('');
+      setNewPassword('');
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to update password.');
+    } finally {
+      setPasswordUpdating(false);
+    }
+  };
+
+  const handleUpdateNotifications = async (type, value) => {
+    try {
+      if (type === 'push') setPushEnabled(value);
+      if (type === 'email') setEmailEnabled(value);
+      
+      const token = await AsyncStorage.getItem('token');
+      await axios.put(`${API_URL}/api/auth/update`, {
+        pushEnabled: type === 'push' ? value : pushEnabled,
+        emailEnabled: type === 'email' ? value : emailEnabled
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save preferences.');
+    }
+  };
+
   const fetchProfileData = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -54,6 +112,8 @@ export default function ProfileScreen({ navigation }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(userRes.data.data);
+      setPushEnabled(userRes.data.data.pushEnabled ?? true);
+      setEmailEnabled(userRes.data.data.emailEnabled ?? true);
 
       // Fetch Farms for stats
       const farmRes = await axios.get(`${API_URL}/api/farms`, {
@@ -85,6 +145,15 @@ export default function ProfileScreen({ navigation }) {
   const handleLogout = async () => {
     await AsyncStorage.removeItem('token');
     navigation.replace('Login');
+  };
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'hi' : 'en';
+    i18n.changeLanguage(newLang);
+    Alert.alert(
+      newLang === 'en' ? 'Language Changed' : 'भाषा बदली गई',
+      newLang === 'en' ? 'App language set to English' : 'ऐप की भाषा हिंदी में सेट हो गई है'
+    );
   };
 
   return (
@@ -141,49 +210,63 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.statsCard}>
               <View style={styles.statBox}>
                 <Text style={styles.statNumber}>{stats.farms}</Text>
-                <Text style={styles.statLabel}>ACTIVE FIELDS</Text>
+                <Text style={styles.statLabel}>{t('profile.active_fields')}</Text>
               </View>
               <View style={styles.statSeparator} />
               <View style={styles.statBox}>
                 <Text style={styles.statNumber}>{stats.predictions}</Text>
-                <Text style={styles.statLabel}>PREDICTIONS</Text>
+                <Text style={styles.statLabel}>{t('profile.predictions')}</Text>
               </View>
             </View>
 
             {/* Menu Options */}
             <View style={{ paddingHorizontal: 20 }}>
-              <Text style={styles.menuHeader}>SYSTEM SETTINGS</Text>
+              <Text style={styles.menuHeader}>{t('profile.system_settings')}</Text>
               <View style={styles.menuCard}>
-                <TouchableOpacity style={styles.menuItem}>
+                <TouchableOpacity style={styles.menuItem} onPress={toggleLanguage}>
+                  <View style={styles.menuItemLeft}>
+                    <View style={styles.menuIconBg}>
+                      <Feather name="globe" size={18} color="#0F766E" />
+                    </View>
+                    <Text style={styles.menuText}>
+                      {t('profile.language')} / भाषा : {i18n.language === 'hi' ? 'हिंदी (Hindi)' : 'English'}
+                    </Text>
+                  </View>
+                  <Feather name="refresh-cw" size={16} color="#9CA3AF" />
+                </TouchableOpacity>
+
+                <View style={styles.separator} />
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => setSecurityModalVisible(true)}>
                   <View style={styles.menuItemLeft}>
                     <View style={styles.menuIconBg}>
                       <Feather name="shield" size={18} color="#0F766E" />
                     </View>
-                    <Text style={styles.menuText}>Security & Privacy</Text>
+                    <Text style={styles.menuText}>{t('profile.security')}</Text>
                   </View>
                   <Feather name="chevron-right" size={16} color="#9CA3AF" />
                 </TouchableOpacity>
                 
                 <View style={styles.separator} />
 
-                <TouchableOpacity style={styles.menuItem}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => setNotificationsModalVisible(true)}>
                   <View style={styles.menuItemLeft}>
                     <View style={styles.menuIconBg}>
                       <Feather name="bell" size={18} color="#0F766E" />
                     </View>
-                    <Text style={styles.menuText}>Notification Settings</Text>
+                    <Text style={styles.menuText}>{t('profile.notifications')}</Text>
                   </View>
                   <Feather name="chevron-right" size={16} color="#9CA3AF" />
                 </TouchableOpacity>
 
                 <View style={styles.separator} />
 
-                <TouchableOpacity style={styles.menuItem}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => setSupportModalVisible(true)}>
                   <View style={styles.menuItemLeft}>
                     <View style={styles.menuIconBg}>
                       <Feather name="help-circle" size={18} color="#0F766E" />
                     </View>
-                    <Text style={styles.menuText}>Support & Help Center</Text>
+                    <Text style={styles.menuText}>{t('profile.support')}</Text>
                   </View>
                   <Feather name="chevron-right" size={16} color="#9CA3AF" />
                 </TouchableOpacity>
@@ -192,7 +275,7 @@ export default function ProfileScreen({ navigation }) {
               {/* Logout Action */}
               <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                 <Feather name="log-out" size={20} color="#EF4444" style={{ marginRight: 10 }} />
-                <Text style={styles.logoutText}>Log Out Account</Text>
+                <Text style={styles.logoutText}>{t('profile.logout')}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -204,42 +287,42 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile Info</Text>
+              <Text style={styles.modalTitle}>{t('profile.edit_profile_info')}</Text>
               <TouchableOpacity onPress={() => setEditModalVisible(false)} style={styles.closeBtn}>
                 <Feather name="x" size={20} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>Full Name</Text>
+              <Text style={styles.inputLabel}>{t('profile.full_name')}</Text>
               <View style={styles.inputWrapper}>
                 <Feather name="user" size={18} color="#0F766E" style={{ marginRight: 10 }} />
                 <TextInput 
                   style={styles.input} 
-                  placeholder="Your Full Name" 
+                  placeholder={t('profile.name_placeholder')} 
                   value={editName} 
                   onChangeText={setEditName} 
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Phone Number</Text>
+              <Text style={styles.inputLabel}>{t('profile.phone_number')}</Text>
               <View style={styles.inputWrapper}>
                 <Feather name="phone" size={18} color="#0F766E" style={{ marginRight: 10 }} />
                 <TextInput 
                   style={styles.input} 
-                  placeholder="Your Phone Number" 
+                  placeholder={t('profile.phone_placeholder')} 
                   keyboardType="numeric"
                   value={editPhone} 
                   onChangeText={setEditPhone} 
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Email Address</Text>
+              <Text style={styles.inputLabel}>{t('profile.email_address')}</Text>
               <View style={styles.inputWrapper}>
                 <Feather name="mail" size={18} color="#0F766E" style={{ marginRight: 10 }} />
                 <TextInput 
                   style={styles.input} 
-                  placeholder="Your Email Address" 
+                  placeholder={t('profile.email_placeholder')} 
                   autoCapitalize="none"
                   value={editEmail} 
                   onChangeText={setEditEmail} 
@@ -252,10 +335,93 @@ export default function ProfileScreen({ navigation }) {
                 ) : (
                   <>
                     <Feather name="check" size={18} color="#FFF" style={{ marginRight: 6 }} />
-                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                    <Text style={styles.saveBtnText}>{t('profile.save_changes')}</Text>
                   </>
                 )}
               </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Security Modal */}
+      <Modal visible={securityModalVisible} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('profile.security')}</Text>
+              <TouchableOpacity onPress={() => setSecurityModalVisible(false)} style={styles.closeBtn}>
+                <Feather name="x" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputLabel}>{t('profile.current_password')}</Text>
+              <View style={styles.inputWrapper}>
+                <Feather name="lock" size={18} color="#0F766E" style={{ marginRight: 10 }} />
+                <TextInput style={styles.input} secureTextEntry value={currentPassword} onChangeText={setCurrentPassword} />
+              </View>
+              <Text style={styles.inputLabel}>{t('profile.new_password')}</Text>
+              <View style={styles.inputWrapper}>
+                <Feather name="shield" size={18} color="#0F766E" style={{ marginRight: 10 }} />
+                <TextInput style={styles.input} secureTextEntry value={newPassword} onChangeText={setNewPassword} />
+              </View>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleUpdatePassword} disabled={passwordUpdating}>
+                {passwordUpdating ? <ActivityIndicator color="#FFF" /> : (
+                  <>
+                    <Feather name="check" size={18} color="#FFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.saveBtnText}>{t('profile.change_password')}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Notifications Modal */}
+      <Modal visible={notificationsModalVisible} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('profile.notifications')}</Text>
+              <TouchableOpacity onPress={() => setNotificationsModalVisible(false)} style={styles.closeBtn}>
+                <Feather name="x" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <View style={{ marginBottom: 20 }}>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>{t('profile.push_notifications')}</Text>
+                <Switch value={pushEnabled} onValueChange={(val) => handleUpdateNotifications('push', val)} trackColor={{ false: '#E2E8F0', true: '#0F766E' }} />
+              </View>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>{t('profile.email_alerts')}</Text>
+                <Switch value={emailEnabled} onValueChange={(val) => handleUpdateNotifications('email', val)} trackColor={{ false: '#E2E8F0', true: '#0F766E' }} />
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Support Modal */}
+      <Modal visible={supportModalVisible} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('profile.support_center')}</Text>
+              <TouchableOpacity onPress={() => setSupportModalVisible(false)} style={styles.closeBtn}>
+                <Feather name="x" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+              <Text style={styles.faqHeader}>{t('profile.contact_us')}</Text>
+              <Text style={styles.faqText}>support@agriyield.com</Text>
+              <Text style={styles.faqText}>+91 1800 123 456</Text>
+              <View style={styles.separator} />
+              <Text style={styles.faqHeader}>{t('profile.faq')}</Text>
+              <Text style={styles.faqQ}>{t('profile.faq_1_q')}</Text>
+              <Text style={styles.faqA}>{t('profile.faq_1_a')}</Text>
+              <Text style={styles.faqQ}>{t('profile.faq_2_q')}</Text>
+              <Text style={styles.faqA}>{t('profile.faq_2_a')}</Text>
             </ScrollView>
           </View>
         </View>
@@ -558,5 +724,47 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#64748B',
+  },
+  closeBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  switchLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  faqHeader: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F766E',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  faqText: {
+    fontSize: 14,
+    color: '#475569',
+    marginBottom: 4,
+  },
+  faqQ: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  faqA: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 20,
   }
 });
